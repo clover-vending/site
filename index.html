@@ -6,7 +6,7 @@
 <title>Clover Vending | Phone charging stations in Clarksville, TN</title>
 <meta name="description" content="Tap-to-pay phone charging stations for bars and restaurants in Clarksville, Tennessee. Free to the venue.">
 <meta name="theme-color" content="#2A1530">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-26 -26 52 52'%3E%3Cg fill='%2334C759' transform='rotate(45)'%3E%3Cpath id='l' d='M2 2H12A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12Z'/%3E%3Cuse href='%23l' transform='rotate(90)'/%3E%3Cuse href='%23l' transform='rotate(180)'/%3E%3Cuse href='%23l' transform='rotate(270)'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-26 -26 52 52'%3E%3Cpath d='M0 2C0.3 10 1.6 17 5.5 23' fill='none' stroke='%2334C759' stroke-width='3' stroke-linecap='round'/%3E%3Cg fill='%2334C759'%3E%3Cpath id='l' transform='rotate(45)' d='M0 -1.5C-3 -5 -11 -8.5 -11.6 -15.2C-12.1 -20.8 -6.8 -24.2 -3.6 -22.6C-1.8 -21.7 -0.6 -20.2 0 -18.4C0.6 -20.2 1.8 -21.7 3.6 -22.6C6.8 -24.2 12.1 -20.8 11.6 -15.2C11 -8.5 3 -5 0 -1.5Z'/%3E%3Cuse href='%23l' transform='rotate(90)'/%3E%3Cuse href='%23l' transform='rotate(180)'/%3E%3Cuse href='%23l' transform='rotate(270)'/%3E%3C/g%3E%3C/svg%3E">
 <style>
   :root {
     --bg: #2A1530;
@@ -181,13 +181,21 @@
 <!-- Reusable clover mark -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <path id="leaf" d="M2 2H12A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12Z"/>
+    <!-- One heart-shaped leaflet: narrow at the center, two soft lobes and a notch at the tip -->
+    <path id="leaf" d="M0 -1.5C-3 -5 -11 -8.5 -11.6 -15.2C-12.1 -20.8 -6.8 -24.2 -3.6 -22.6C-1.8 -21.7 -0.6 -20.2 0 -18.4C0.6 -20.2 1.8 -21.7 3.6 -22.6C6.8 -24.2 12.1 -20.8 11.6 -15.2C11 -8.5 3 -5 0 -1.5Z"/>
     <symbol id="clover" viewBox="-26 -26 52 52">
-      <g fill="#34C759" transform="rotate(45)">
-        <use href="#leaf"/>
-        <use href="#leaf" transform="rotate(90)"/>
-        <use href="#leaf" transform="rotate(180)"/>
-        <use href="#leaf" transform="rotate(270)"/>
+      <path d="M0 2C0.3 10 1.6 17 5.5 23" fill="none" stroke="#34C759" stroke-width="2.6" stroke-linecap="round"/>
+      <g fill="#34C759">
+        <use href="#leaf" transform="rotate(45)"/>
+        <use href="#leaf" transform="rotate(135)"/>
+        <use href="#leaf" transform="rotate(225)"/>
+        <use href="#leaf" transform="rotate(315)"/>
+      </g>
+      <g stroke="#2A1530" stroke-width="0.9" stroke-linecap="round" opacity="0.35">
+        <path d="M0 -3V-17" transform="rotate(45)"/>
+        <path d="M0 -3V-17" transform="rotate(135)"/>
+        <path d="M0 -3V-17" transform="rotate(225)"/>
+        <path d="M0 -3V-17" transform="rotate(315)"/>
       </g>
     </symbol>
   </defs>
