@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clover Vending | Phone charging stations in Clarksville, TN</title>
+<meta name="description" content="Tap-to-pay phone charging stations for bars and restaurants in Clarksville, Tennessee. Free to the venue.">
+<meta name="theme-color" content="#2A1530">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-26 -26 52 52'%3E%3Cg fill='%2334C759' transform='rotate(45)'%3E%3Cpath id='l' d='M2 2H12A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12Z'/%3E%3Cuse href='%23l' transform='rotate(90)'/%3E%3Cuse href='%23l' transform='rotate(180)'/%3E%3Cuse href='%23l' transform='rotate(270)'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #2A1530;
+    --card: #3D2245;
+    --card-line: #4E2F57;
+    --green: #34C759;
+    --green-dim: rgba(52, 199, 89, .14);
+    --text: #F3EEF5;
+    --muted: #C9B8CF;
+    --radius: 18px;
+    --max: 1040px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--green); }
+  h1, h2, h3 { color: var(--green); line-height: 1.15; margin: 0; letter-spacing: -0.02em; }
+  h2 { font-size: clamp(1.7rem, 6vw, 2.4rem); font-weight: 700; }
+  h3 { font-size: 1.1rem; font-weight: 650; }
+  p { margin: 0; }
+  .wrap { max-width: var(--max); margin: 0 auto; padding: 0 20px; }
+  section { padding: 72px 0; scroll-margin-top: 64px; }
+  .eyebrow {
+    display: inline-block;
+    font-size: .78rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 12px;
+  }
+  .lede { color: var(--muted); margin-top: 12px; max-width: 34em; }
+
+  /* Header */
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(42, 21, 48, .86);
+    backdrop-filter: saturate(140%) blur(12px);
+    -webkit-backdrop-filter: saturate(140%) blur(12px);
+    border-bottom: 1px solid rgba(78, 47, 87, .6);
+  }
+  .bar { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-weight: 650; letter-spacing: -0.01em; }
+  .brand svg { width: 28px; height: 28px; }
+
+  /* Battery */
+  .battery { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .batt-body {
+    position: relative; width: 34px; height: 16px;
+    border: 2px solid var(--muted); border-radius: 5px; padding: 2px;
+  }
+  .batt-body::after {
+    content: ""; position: absolute; right: -5px; top: 3px;
+    width: 3px; height: 6px; border-radius: 0 2px 2px 0; background: var(--muted);
+  }
+  .batt-fill { height: 100%; width: 8%; background: var(--green); border-radius: 2px; transition: width .15s linear; }
+  .battery.full .batt-body { border-color: var(--green); }
+  .battery.full .batt-body::after { background: var(--green); }
+  .battery.full .batt-pct { color: var(--green); }
+
+  /* Logo pulse */
+  .pulse { animation: charge 2.8s ease-in-out infinite; transform-origin: center; }
+  @keyframes charge {
+    0%, 100% { opacity: 1; filter: drop-shadow(0 0 0 rgba(52,199,89,0)); }
+    50% { opacity: .78; filter: drop-shadow(0 0 10px rgba(52,199,89,.55)); }
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 52px; padding: 0 26px; border-radius: 999px;
+    background: var(--green); color: #10230F; font-weight: 650; font-size: 1rem;
+    text-decoration: none; border: 0; cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(52,199,89,.25); }
+  .btn:focus-visible, a:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+  .btn-ghost { background: transparent; color: var(--text); border: 1.5px solid var(--card-line); }
+  .btn-ghost:hover { box-shadow: none; border-color: var(--muted); }
+
+  /* Hero */
+  .hero { padding: 56px 0 72px; text-align: center; }
+  .hero-logo { width: 112px; height: 112px; margin: 0 auto 28px; display: block; }
+  .hero h1 { font-size: clamp(2.6rem, 11vw, 4.4rem); font-weight: 750; letter-spacing: -0.035em; }
+  .hero .tagline { font-size: clamp(1.15rem, 4.5vw, 1.4rem); margin: 14px auto 0; max-width: 22em; }
+  .hero .sub { color: var(--muted); margin: 10px auto 0; max-width: 26em; font-size: .98rem; }
+  .hero-actions { display: flex; flex-direction: column; gap: 12px; margin: 32px auto 0; max-width: 320px; }
+
+  /* Cards */
+  .grid { display: grid; gap: 14px; margin-top: 32px; }
+  .card {
+    background: var(--card); border: 1px solid var(--card-line);
+    border-radius: var(--radius); padding: 22px;
+  }
+  .card p { color: var(--muted); margin-top: 6px; font-size: .98rem; }
+
+  /* Steps */
+  .step { display: flex; gap: 16px; align-items: flex-start; }
+  .step-icon {
+    flex: none; width: 52px; height: 52px; border-radius: 14px;
+    background: var(--green-dim); display: grid; place-items: center;
+  }
+  .step-icon svg { width: 28px; height: 28px; stroke: var(--green); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .step-num { font-size: .75rem; font-weight: 650; color: var(--muted); letter-spacing: .08em; }
+
+  /* Venues */
+  .venues { background: linear-gradient(180deg, rgba(61,34,69,0) 0%, rgba(61,34,69,.45) 100%); }
+  .perk { display: flex; gap: 14px; align-items: flex-start; }
+  .check {
+    flex: none; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--green); display: grid; place-items: center; margin-top: 1px;
+  }
+  .check svg { width: 14px; height: 14px; stroke: #10230F; stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* FAQ */
+  .faq { margin-top: 28px; display: grid; gap: 10px; }
+  details { background: var(--card); border: 1px solid var(--card-line); border-radius: 14px; }
+  summary {
+    list-style: none; cursor: pointer; padding: 18px 20px; font-weight: 600;
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after {
+    content: ""; flex: none; width: 10px; height: 10px;
+    border-right: 2px solid var(--green); border-bottom: 2px solid var(--green);
+    transform: rotate(45deg) translateY(-3px); transition: transform .2s ease;
+  }
+  details[open] summary::after { transform: rotate(-135deg) translateY(-3px); }
+  details p { padding: 0 20px 18px; color: var(--muted); }
+
+  /* Contact */
+  .contact-card { text-align: center; padding: 36px 22px; }
+  .contact-card .clover { width: 56px; height: 56px; margin: 0 auto 18px; display: block; }
+  .contact-lines { display: grid; gap: 10px; margin: 26px auto 0; max-width: 340px; }
+  .contact-line {
+    display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+    background: var(--bg); border: 1px solid var(--card-line); border-radius: 14px;
+    color: var(--text); text-decoration: none; font-weight: 550; text-align: left;
+  }
+  .contact-line:hover { border-color: var(--green); }
+  .contact-line svg { width: 20px; height: 20px; flex: none; stroke: var(--green); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .local { margin-top: 26px; color: var(--muted); font-size: .95rem; display: inline-flex; align-items: center; gap: 8px; }
+  .local svg { width: 16px; height: 16px; stroke: var(--green); fill: none; stroke-width: 2; }
+
+  footer { padding: 28px 0 40px; color: var(--muted); font-size: .85rem; text-align: center; border-top: 1px solid rgba(78,47,87,.6); }
+
+  @media (min-width: 720px) {
+    section { padding: 104px 0; }
+    .hero { padding: 96px 0 104px; }
+    .hero-logo { width: 136px; height: 136px; }
+    .hero-actions { flex-direction: row; justify-content: center; max-width: none; }
+    .steps { grid-template-columns: repeat(3, 1fr); }
+    .steps .step { flex-direction: column; }
+    .perks { grid-template-columns: repeat(2, 1fr); }
+    .faq { grid-template-columns: 1fr 1fr; align-items: start; }
+    .contact-card { padding: 56px 40px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .pulse { animation: none; }
+    .batt-fill, .btn { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Reusable clover mark -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <path id="leaf" d="M2 2H12A10 10 0 0 1 22 12A10 10 0 0 1 12 22A10 10 0 0 1 2 12Z"/>
+    <symbol id="clover" viewBox="-26 -26 52 52">
+      <g fill="#34C759" transform="rotate(45)">
+        <use href="#leaf"/>
+        <use href="#leaf" transform="rotate(90)"/>
+        <use href="#leaf" transform="rotate(180)"/>
+        <use href="#leaf" transform="rotate(270)"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="#top" aria-label="Clover Vending, back to top">
+      <svg class="pulse" aria-hidden="true"><use href="#clover"/></svg>
+      Clover Vending
+    </a>
+    <div class="battery" id="battery" role="img" aria-label="Page scroll progress">
+      <span class="batt-pct" id="battPct">8%</span>
+      <div class="batt-body"><div class="batt-fill" id="battFill"></div></div>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="wrap">
+      <svg class="hero-logo pulse" role="img" aria-label="Clover Vending logo"><use href="#clover"/></svg>
+      <h1>Clover Vending</h1>
+      <p class="tagline">Nobody leaves with a dead phone.</p>
+      <p class="sub">Tap-to-pay phone charging stations for bars and restaurants in Clarksville, Tennessee.</p>
+      <div class="hero-actions">
+        <a class="btn" href="#contact">Get a station</a>
+        <a class="btn btn-ghost" href="#how">How it works</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <span class="eyebrow">For customers</span>
+      <h2>How it works</h2>
+      <p class="lede">Charge while you eat and drink. Your phone stays with you.</p>
+      <div class="grid steps">
+        <div class="card step">
+          <div class="step-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg>
+          </div>
+          <div>
+            <div class="step-num">STEP 1</div>
+            <h3>Tap your card</h3>
+            <p>Use any card or your phone's wallet at the station.</p>
+          </div>
+        </div>
+        <div class="card step">
+          <div class="step-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M12.5 8l-2 4h3l-2 4"/></svg>
+          </div>
+          <div>
+            <div class="step-num">STEP 2</div>
+            <h3>Grab a charger</h3>
+            <p>A charged power bank pops out. It has cables for iPhone and Android built in.</p>
+          </div>
+        </div>
+        <div class="card step">
+          <div class="step-icon">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M8 11l4 4 4-4"/><path d="M5 20h14"/></svg>
+          </div>
+          <div>
+            <div class="step-num">STEP 3</div>
+            <h3>Drop it back</h3>
+            <p>Return it to the station before you leave. That's it.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="venues" class="venues">
+    <div class="wrap">
+      <span class="eyebrow">For bars and restaurants</span>
+      <h2>Why venues add one</h2>
+      <p class="lede">You get a station on your counter. We handle the rest.</p>
+      <div class="grid perks">
+        <div class="card perk">
+          <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <div><h3>Free to the venue</h3><p>No equipment cost. No setup fee.</p></div>
+        </div>
+        <div class="card perk">
+          <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <div><h3>We install and service it</h3><p>We set it up, keep it stocked, and fix anything that breaks.</p></div>
+        </div>
+        <div class="card perk">
+          <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <div><h3>Monthly revenue share</h3><p>You get a cut of every rental, paid each month.</p></div>
+        </div>
+        <div class="card perk">
+          <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <div><h3>Customers stay longer</h3><p>People don't leave early because their phone is about to die.</p></div>
+        </div>
+        <div class="card perk">
+          <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <div><h3>No more phones behind the bar</h3><p>Staff stop managing chargers and get back to serving.</p></div>
+        </div>
+        <div class="card perk">
+          <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <div><h3>Remove it anytime</h3><p>Give us 30 days notice and we'll pick it up.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <span class="eyebrow">Questions</span>
+      <h2>FAQ</h2>
+      <div class="faq">
+        <details>
+          <summary>What if someone doesn't return it?</summary>
+          <p>Their card is charged for the power bank and they keep it. The venue never pays for a lost unit, and we restock the station.</p>
+        </details>
+        <details>
+          <summary>Is it safe?</summary>
+          <p>Yes. The power banks use certified batteries, and every station is insured.</p>
+        </details>
+        <details>
+          <summary>Who fixes it if something goes wrong?</summary>
+          <p>We do. Call or text us and we'll come out. You never pay for repairs.</p>
+        </details>
+        <details>
+          <summary>How much space does it take?</summary>
+          <p>About the footprint of a countertop napkin holder. It sits on a counter or bar top and needs one standard outlet.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="wrap">
+      <div class="card contact-card">
+        <svg class="clover pulse" aria-hidden="true"><use href="#clover"/></svg>
+        <h2>Get a station</h2>
+        <p class="lede" style="margin-left:auto;margin-right:auto">Tell us about your venue. We'll come by, take a look, and answer your questions.</p>
+        <div class="contact-lines">
+          <a class="contact-line" href="mailto:EMAIL_HERE">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg>
+            EMAIL_HERE
+          </a>
+          <a class="contact-line" href="tel:PHONE_HERE">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
+            PHONE_HERE
+          </a>
+        </div>
+        <p class="local">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          Proudly local to Clarksville
+        </p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">&copy; <span id="year">2026</span> Clover Vending &middot; Clarksville, Tennessee</div>
+</footer>
+
+<script>
+  (function () {
+    var fill = document.getElementById('battFill');
+    var pct = document.getElementById('battPct');
+    var battery = document.getElementById('battery');
+    var ticking = false;
+
+    function update() {
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      var p = max > 0 ? window.scrollY / max : 1;
+      var level = Math.round(8 + Math.min(Math.max(p, 0), 1) * 92);
+      fill.style.width = level + '%';
+      pct.textContent = level + '%';
+      battery.classList.toggle('full', level >= 100);
+      ticking = false;
+    }
+
+    window.addEventListener('scroll', function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+  })();
+</script>
+</body>
+</html>
