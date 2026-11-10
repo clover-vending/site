@@ -6,7 +6,7 @@
 <title>Clover Vending | Phone charging stations in Clarksville, TN</title>
 <meta name="description" content="Tap-to-pay phone charging stations for bars and restaurants in Clarksville, Tennessee. Free to the venue.">
 <meta name="theme-color" content="#2A1530">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-26 -26 52 52'%3E%3Cg fill='%2334C759'%3E%3Cg transform='translate(0 -3) scale(.88)'%3E%3Cpath id='l' transform='rotate(45)' d='M0 -1.5C-3 -5 -11 -8.5 -11.6 -15.2C-12.1 -20.8 -6.8 -24.2 -3.6 -22.6C-1.8 -21.7 -0.6 -20.2 0 -18.4C0.6 -20.2 1.8 -21.7 3.6 -22.6C6.8 -24.2 12.1 -20.8 11.6 -15.2C11 -8.5 3 -5 0 -1.5Z'/%3E%3Cuse href='%23l' transform='rotate(90)'/%3E%3Cuse href='%23l' transform='rotate(180)'/%3E%3Cuse href='%23l' transform='rotate(270)'/%3E%3C/g%3E%3Cpath d='M-1.8 -3C-1.7 7 0.2 16 5.2 23.8C6 25 8.2 23.8 7.5 22.6C3.2 15.6 1.9 7 1.8 -3Z'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-26 -26 52 52'%3E%3Cg fill='%2334C759'%3E%3Cpath id='l' transform='rotate(45)' d='M0 -1.5C-3 -5 -11 -8.5 -11.6 -15.2C-12.1 -20.8 -6.8 -24.2 -3.6 -22.6C-1.8 -21.7 -0.6 -20.2 0 -18.4C0.6 -20.2 1.8 -21.7 3.6 -22.6C6.8 -24.2 12.1 -20.8 11.6 -15.2C11 -8.5 3 -5 0 -1.5Z'/%3E%3Cuse href='%23l' transform='rotate(90)'/%3E%3Cuse href='%23l' transform='rotate(180)'/%3E%3Cuse href='%23l' transform='rotate(270)'/%3E%3C/g%3E%3C/svg%3E">
 <style>
   :root {
     --bg: #2A1530;
@@ -16,8 +16,8 @@
     --green-dim: rgba(52, 199, 89, .14);
     --text: #F3EEF5;
     --muted: #C9B8CF;
-    --radius: 18px;
-    --max: 1040px;
+    --radius: 20px;
+    --max: 1080px;
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
@@ -29,6 +29,7 @@
     font-size: 17px;
     line-height: 1.55;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
   a { color: var(--green); }
   h1, h2, h3 { color: var(--green); line-height: 1.15; margin: 0; letter-spacing: -0.02em; }
@@ -44,13 +45,79 @@
   }
   .lede { color: var(--muted); margin-top: 12px; max-width: 34em; }
 
-  /* Header */
+  /* ---------- Background: slow purple smoke ---------- */
+  .smoke {
+    position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+    background: radial-gradient(120% 80% at 50% 0%, #321A3A 0%, var(--bg) 60%);
+  }
+  .smoke .blob {
+    position: absolute; width: 70vmax; height: 70vmax; border-radius: 50%;
+    opacity: .55; will-change: transform;
+    animation: drift 46s ease-in-out infinite alternate;
+  }
+  .smoke .b1 { left: -25vmax; top: -20vmax; background: radial-gradient(circle, rgba(118,64,138,.55) 0%, rgba(118,64,138,0) 62%); }
+  .smoke .b2 { right: -30vmax; top: 20vh; background: radial-gradient(circle, rgba(86,40,104,.6) 0%, rgba(86,40,104,0) 60%); animation-duration: 58s; animation-direction: alternate-reverse; }
+  .smoke .b3 { left: -10vmax; bottom: -35vmax; background: radial-gradient(circle, rgba(140,82,160,.38) 0%, rgba(140,82,160,0) 60%); animation-duration: 64s; }
+  /* Wispy texture: fractal noise tinted purple, drifting slowly */
+  .smoke .wisp {
+    position: absolute; inset: -50%;
+    background-image: var(--wisp, none);
+    background-size: 900px 900px;
+    opacity: 0; transition: opacity 2s ease; will-change: transform;
+    animation: wisp 120s linear infinite;
+  }
+  .smoke.ready .wisp { opacity: .34; }
+  .smoke .wisp.w2 { background-size: 1300px 1300px; animation-duration: 170s; animation-direction: reverse; }
+  .smoke.ready .wisp.w2 { opacity: .2; }
+  @keyframes drift {
+    0%   { transform: translate3d(0, 0, 0) scale(1); }
+    50%  { transform: translate3d(8vmax, 6vmax, 0) scale(1.12); }
+    100% { transform: translate3d(-6vmax, 10vmax, 0) scale(.94); }
+  }
+  @keyframes wisp {
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(-900px, -450px, 0); }
+  }
+
+  /* ---------- Liquid glass ---------- */
+  .glass {
+    position: relative; isolation: isolate;
+    background:
+      linear-gradient(150deg, rgba(255,255,255,.11) 0%, rgba(255,255,255,.035) 38%, rgba(255,255,255,.015) 100%),
+      rgba(61, 34, 69, .42);
+    -webkit-backdrop-filter: blur(22px) saturate(170%);
+    backdrop-filter: blur(22px) saturate(170%);
+    border: 1px solid rgba(255,255,255,.10);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.22),
+      inset 0 -1px 0 rgba(255,255,255,.04),
+      inset 0 0 24px rgba(255,255,255,.025),
+      0 14px 34px -12px rgba(8, 2, 12, .6);
+  }
+  /* bright rim that catches light on the top-left and bottom-right edges */
+  .glass::before {
+    content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px;
+    background: linear-gradient(155deg, rgba(255,255,255,.5), rgba(255,255,255,0) 28%, rgba(255,255,255,0) 72%, rgba(255,255,255,.22));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    pointer-events: none; z-index: 1;
+  }
+  /* soft glare that follows the pointer */
+  .glass::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1;
+    background: radial-gradient(260px circle at var(--mx, 20%) var(--my, -10%), rgba(255,255,255,.10), rgba(255,255,255,0) 60%);
+    transition: opacity .3s ease;
+  }
+
+  /* ---------- Header ---------- */
   header {
     position: sticky; top: 0; z-index: 10;
-    background: rgba(42, 21, 48, .86);
-    backdrop-filter: saturate(140%) blur(12px);
-    -webkit-backdrop-filter: saturate(140%) blur(12px);
-    border-bottom: 1px solid rgba(78, 47, 87, .6);
+    background: rgba(42, 21, 48, .5);
+    -webkit-backdrop-filter: blur(20px) saturate(170%);
+    backdrop-filter: blur(20px) saturate(170%);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,.15);
   }
   .bar { display: flex; align-items: center; justify-content: space-between; height: 60px; }
   .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; font-weight: 650; letter-spacing: -0.01em; }
@@ -58,20 +125,14 @@
 
   /* Battery */
   .battery { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .batt-body {
-    position: relative; width: 34px; height: 16px;
-    border: 2px solid var(--muted); border-radius: 5px; padding: 2px;
-  }
-  .batt-body::after {
-    content: ""; position: absolute; right: -5px; top: 3px;
-    width: 3px; height: 6px; border-radius: 0 2px 2px 0; background: var(--muted);
-  }
+  .batt-body { position: relative; width: 34px; height: 16px; border: 2px solid var(--muted); border-radius: 5px; padding: 2px; }
+  .batt-body::after { content: ""; position: absolute; right: -5px; top: 3px; width: 3px; height: 6px; border-radius: 0 2px 2px 0; background: var(--muted); }
   .batt-fill { height: 100%; width: 8%; background: var(--green); border-radius: 2px; transition: width .15s linear; }
   .battery.full .batt-body { border-color: var(--green); }
   .battery.full .batt-body::after { background: var(--green); }
   .battery.full .batt-pct { color: var(--green); }
 
-  /* Logo pulse */
+  /* Logo pulse, like a charging light */
   .pulse { animation: charge 2.8s ease-in-out infinite; transform-origin: center; }
   @keyframes charge {
     0%, 100% { opacity: 1; filter: drop-shadow(0 0 0 rgba(52,199,89,0)); }
@@ -80,56 +141,85 @@
 
   /* Buttons */
   .btn {
+    position: relative;
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     min-height: 52px; padding: 0 26px; border-radius: 999px;
-    background: var(--green); color: #10230F; font-weight: 650; font-size: 1rem;
+    background: linear-gradient(180deg, #45D468 0%, var(--green) 55%, #2DB84F 100%);
+    color: #0F230F; font-weight: 650; font-size: 1rem;
     text-decoration: none; border: 0; cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45), inset 0 -1px 0 rgba(0,0,0,.12), 0 8px 22px -8px rgba(52,199,89,.55);
     transition: transform .15s ease, box-shadow .15s ease;
   }
-  .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(52,199,89,.25); }
-  .btn:focus-visible, a:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
-  .btn-ghost { background: transparent; color: var(--text); border: 1.5px solid var(--card-line); }
-  .btn-ghost:hover { box-shadow: none; border-color: var(--muted); }
+  .btn:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 12px 28px -8px rgba(52,199,89,.6); }
+  .btn:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+  .btn-ghost { color: var(--text); background: transparent; box-shadow: none; }
+  .btn-ghost.glass { background: linear-gradient(150deg, rgba(255,255,255,.12), rgba(255,255,255,.03)), rgba(61,34,69,.3); }
+  .btn-ghost:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,.22); }
 
-  /* Hero */
-  .hero { padding: 56px 0 72px; text-align: center; }
-  .hero-logo { width: 112px; height: 112px; margin: 0 auto 28px; display: block; }
+  /* ---------- Hero ---------- */
+  .hero { padding: 48px 0 40px; text-align: center; }
+  .hero-logo { width: 104px; height: 104px; margin: 0 auto 24px; display: block; }
   .hero h1 { font-size: clamp(2.6rem, 11vw, 4.4rem); font-weight: 750; letter-spacing: -0.035em; }
   .hero .tagline { font-size: clamp(1.15rem, 4.5vw, 1.4rem); margin: 14px auto 0; max-width: 22em; }
   .hero .sub { color: var(--muted); margin: 10px auto 0; max-width: 26em; font-size: .98rem; }
   .hero-actions { display: flex; flex-direction: column; gap: 12px; margin: 32px auto 0; max-width: 320px; }
 
-  /* Cards */
-  .grid { display: grid; gap: 14px; margin-top: 32px; }
-  .card {
-    background: var(--card); border: 1px solid var(--card-line);
-    border-radius: var(--radius); padding: 22px;
+  /* 3D station */
+  .stage-wrap { margin-top: 28px; }
+  .stage { position: relative; height: 390px; touch-action: pan-y; }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage-loading {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    color: var(--muted); font-size: .85rem; transition: opacity .4s ease;
   }
+  .stage.ready .stage-loading { opacity: 0; pointer-events: none; }
+  .cord-label {
+    position: absolute; left: 0; top: 0; z-index: 2;
+    padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600; letter-spacing: .01em;
+    color: var(--text); white-space: nowrap; pointer-events: none;
+    opacity: 0; transition: opacity .35s ease;
+    will-change: transform;
+  }
+  .cord-label.show { opacity: 1; }
+  .model-note {
+    display: flex; gap: 10px; align-items: flex-start; text-align: left;
+    max-width: 380px; margin: -8px auto 0; padding: 10px 14px; border-radius: 14px;
+    font-size: .8rem; line-height: 1.45; color: var(--muted);
+  }
+  .model-note svg { flex: none; width: 16px; height: 16px; margin-top: 1px; stroke: var(--muted); fill: none; stroke-width: 2; stroke-linecap: round; }
+  .no-3d .stage, .no-3d .model-note { display: none; }
+
+  /* ---------- Cards ---------- */
+  .grid { display: grid; gap: 14px; margin-top: 32px; }
+  .card { border-radius: var(--radius); padding: 22px; }
+  .card > * { position: relative; z-index: 2; }
   .card p { color: var(--muted); margin-top: 6px; font-size: .98rem; }
 
-  /* Steps */
   .step { display: flex; gap: 16px; align-items: flex-start; }
   .step-icon {
-    flex: none; width: 52px; height: 52px; border-radius: 14px;
-    background: var(--green-dim); display: grid; place-items: center;
+    flex: none; width: 52px; height: 52px; border-radius: 15px;
+    background: linear-gradient(160deg, rgba(52,199,89,.24), rgba(52,199,89,.08));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 0 0 1px rgba(52,199,89,.2);
+    display: grid; place-items: center;
   }
   .step-icon svg { width: 28px; height: 28px; stroke: var(--green); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .step-num { font-size: .75rem; font-weight: 650; color: var(--muted); letter-spacing: .08em; }
 
-  /* Venues */
-  .venues { background: linear-gradient(180deg, rgba(61,34,69,0) 0%, rgba(61,34,69,.45) 100%); }
   .perk { display: flex; gap: 14px; align-items: flex-start; }
   .check {
     flex: none; width: 26px; height: 26px; border-radius: 50%;
-    background: var(--green); display: grid; place-items: center; margin-top: 1px;
+    background: linear-gradient(180deg, #45D468, var(--green));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
+    display: grid; place-items: center; margin-top: 1px;
   }
-  .check svg { width: 14px; height: 14px; stroke: #10230F; stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .check svg { width: 14px; height: 14px; stroke: #0F230F; stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
-  /* FAQ */
+  /* ---------- FAQ ---------- */
   .faq { margin-top: 28px; display: grid; gap: 10px; }
-  details { background: var(--card); border: 1px solid var(--card-line); border-radius: 14px; }
+  details { border-radius: 16px; }
+  details > * { position: relative; z-index: 2; }
   summary {
-    list-style: none; cursor: pointer; padding: 18px 20px; font-weight: 600;
+    list-style: none; cursor: pointer; padding: 18px 20px; font-weight: 600; border-radius: 16px;
     display: flex; justify-content: space-between; align-items: center; gap: 16px;
   }
   summary::-webkit-details-marker { display: none; }
@@ -141,26 +231,31 @@
   details[open] summary::after { transform: rotate(-135deg) translateY(-3px); }
   details p { padding: 0 20px 18px; color: var(--muted); }
 
-  /* Contact */
-  .contact-card { text-align: center; padding: 36px 22px; }
+  /* ---------- Contact ---------- */
+  .contact-card { text-align: center; padding: 40px 22px; }
   .contact-card .clover { width: 56px; height: 56px; margin: 0 auto 18px; display: block; }
+  .contact-card .lede { margin-left: auto; margin-right: auto; }
   .contact-lines { display: grid; gap: 10px; margin: 26px auto 0; max-width: 340px; }
   .contact-line {
-    display: flex; align-items: center; gap: 12px; padding: 14px 18px;
-    background: var(--bg); border: 1px solid var(--card-line); border-radius: 14px;
+    display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 14px;
     color: var(--text); text-decoration: none; font-weight: 550; text-align: left;
+    overflow-wrap: anywhere;
   }
-  .contact-line:hover { border-color: var(--green); }
-  .contact-line svg { width: 20px; height: 20px; flex: none; stroke: var(--green); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .contact-line.glass { background: linear-gradient(150deg, rgba(255,255,255,.08), rgba(255,255,255,.02)), rgba(42,21,48,.45); }
+  .contact-line:hover { border-color: rgba(52,199,89,.6); }
+  .contact-line svg { position: relative; z-index: 2; width: 20px; height: 20px; flex: none; stroke: var(--green); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .contact-line span { position: relative; z-index: 2; }
   .local { margin-top: 26px; color: var(--muted); font-size: .95rem; display: inline-flex; align-items: center; gap: 8px; }
   .local svg { width: 16px; height: 16px; stroke: var(--green); fill: none; stroke-width: 2; }
 
-  footer { padding: 28px 0 40px; color: var(--muted); font-size: .85rem; text-align: center; border-top: 1px solid rgba(78,47,87,.6); }
+  footer { padding: 28px 0 40px; color: var(--muted); font-size: .85rem; text-align: center; border-top: 1px solid rgba(255,255,255,.06); }
+
+  /* Scroll reveal (only when JS is running) */
+  .js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+  .js .reveal.in { opacity: 1; transform: none; }
 
   @media (min-width: 720px) {
     section { padding: 104px 0; }
-    .hero { padding: 96px 0 104px; }
-    .hero-logo { width: 136px; height: 136px; }
     .hero-actions { flex-direction: row; justify-content: center; max-width: none; }
     .steps { grid-template-columns: repeat(3, 1fr); }
     .steps .step { flex-direction: column; }
@@ -168,124 +263,41 @@
     .faq { grid-template-columns: 1fr 1fr; align-items: start; }
     .contact-card { padding: 56px 40px; }
   }
-
-  /* ---------- 3D station ---------- */
-  .stage {
-    position: relative; height: 360px; margin-top: 24px; margin-bottom: -40px;
-    display: grid; place-items: center;
-    perspective: 1000px; perspective-origin: 50% 35%;
-    touch-action: pan-y;
-  }
-  .floor {
-    position: absolute; left: 50%; bottom: 22px; width: 300px; height: 70px;
-    transform: translateX(-50%);
-    background: radial-gradient(ellipse at center, rgba(52,199,89,.28) 0%, rgba(52,199,89,.08) 40%, rgba(52,199,89,0) 70%);
-    filter: blur(4px);
-  }
-  .station {
-    --w: 170px; --h: 250px; --d: 96px;
-    position: relative; width: var(--w); height: var(--h);
-    transform-style: preserve-3d;
-    transform: rotateX(-14deg) rotateY(-30deg);
-    will-change: transform;
-  }
-  .face { position: absolute; left: 0; top: 0; backface-visibility: hidden; }
-  .front {
-    width: var(--w); height: var(--h); border-radius: 6px;
-    transform: translateZ(calc(var(--d) / 2));
-    background: linear-gradient(165deg, #452750 0%, #2C1633 55%, #1F0E25 100%);
-    box-shadow: inset 0 0 0 1px rgba(243,238,245,.07);
-  }
-  .back  { width: var(--w); height: var(--h); border-radius: 6px; background: #1A0B1F; transform: rotateY(180deg) translateZ(calc(var(--d) / 2)); }
-  .right, .left { width: var(--d); height: var(--h); left: calc((var(--w) - var(--d)) / 2); }
-  .right { background: linear-gradient(90deg, #2A1531, #170A1C); transform: rotateY(90deg) translateZ(calc(var(--w) / 2)); }
-  .left  { background: linear-gradient(90deg, #22102A, #3A1F42); transform: rotateY(-90deg) translateZ(calc(var(--w) / 2)); }
-  .top, .bottom { width: var(--w); height: var(--d); top: calc((var(--h) - var(--d)) / 2); }
-  .top    { background: linear-gradient(180deg, #4B2B56, #3A1F43); transform: rotateX(90deg) translateZ(calc(var(--h) / 2)); }
-  .bottom { background: #12071A; transform: rotateX(-90deg) translateZ(calc(var(--h) / 2)); }
-
-  .screen {
-    position: absolute; left: 14px; right: 14px; top: 14px; height: 78px;
-    border-radius: 8px; background: #0E0612;
-    box-shadow: inset 0 0 0 1px rgba(52,199,89,.25), 0 0 18px rgba(52,199,89,.12);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-  }
-  .screen svg { width: 30px; height: 30px; }
-  .screen span { font-size: 10px; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }
-  .tap { position: absolute; left: 0; right: 0; top: 102px; display: grid; place-items: center; }
-  .tap svg { width: 30px; height: 30px; fill: none; stroke: var(--muted); stroke-width: 1.7; stroke-linecap: round; opacity: .8; }
-  .slots {
-    position: absolute; left: 14px; right: 14px; bottom: 14px; height: 92px;
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
-  }
-  .slot {
-    position: relative; border-radius: 5px; background: #0B0410;
-    box-shadow: inset 0 3px 6px rgba(0,0,0,.6);
-    overflow: hidden;
-  }
-  .slot i {
-    position: absolute; left: 3px; right: 3px; top: 4px; bottom: 3px; border-radius: 4px;
-    background: linear-gradient(180deg, #F3EEF5, #CBBFD1);
-  }
-  .slot i::after {
-    content: ""; position: absolute; left: 50%; top: 8px; width: 12px; height: 3px; margin-left: -6px;
-    border-radius: 2px; background: var(--green); box-shadow: 0 0 6px var(--green);
-  }
-
-  /* The power bank that slides out of slot 3 */
-  .bank {
-    --bw: 28px; --bh: 76px; --bd: 14px;
-    position: absolute; width: var(--bw); height: var(--bh);
-    left: 90px; top: 162px;
-    transform-style: preserve-3d;
-    transform: translate3d(0, 0, 42px);
-    animation: grab 6.5s cubic-bezier(.45,0,.25,1) infinite;
-  }
-  .b-face { position: absolute; left: 0; top: 0; }
-  .b-front, .b-back { width: var(--bw); height: var(--bh); border-radius: 4px; }
-  .b-front {
-    transform: translateZ(calc(var(--bd) / 2));
-    background: linear-gradient(180deg, #F7F3F9, #D3C8D8);
-    display: flex; flex-direction: column; align-items: center; padding-top: 8px; gap: 10px;
-  }
-  .b-front .led { width: 12px; height: 3px; border-radius: 2px; background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .b-front svg { width: 16px; height: 16px; }
-  .b-back { background: #BFB2C5; transform: rotateY(180deg) translateZ(calc(var(--bd) / 2)); }
-  .b-right, .b-left { width: var(--bd); height: var(--bh); left: calc((var(--bw) - var(--bd)) / 2); background: #B5A8BB; }
-  .b-right { transform: rotateY(90deg) translateZ(calc(var(--bw) / 2)); }
-  .b-left  { transform: rotateY(-90deg) translateZ(calc(var(--bw) / 2)); background: #E2D9E6; }
-  .b-top, .b-bottom { width: var(--bw); height: var(--bd); top: calc((var(--bh) - var(--bd)) / 2); }
-  .b-top    { background: #FFFFFF; transform: rotateX(90deg) translateZ(calc(var(--bh) / 2)); }
-  .b-bottom { background: #A99CAF; transform: rotateX(-90deg) translateZ(calc(var(--bh) / 2)); }
-  @keyframes grab {
-    0%, 18%   { transform: translate3d(0, 0, 42px) rotateY(0) rotateX(0); }
-    40%, 62%  { transform: translate3d(20px, -84px, 150px) rotateY(-28deg) rotateX(10deg); }
-    84%, 100% { transform: translate3d(0, 0, 42px) rotateY(0) rotateX(0); }
-  }
-
-  /* Scroll reveal (only when JS is running) */
-  .js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
-  .js .reveal.in { opacity: 1; transform: none; }
-
-  @media (min-width: 900px) {
-    .hero { text-align: left; }
-    .hero-grid { display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; gap: 32px; }
+  @media (min-width: 940px) {
+    .hero { padding: 64px 0 72px; text-align: left; }
+    .hero-grid { display: grid; grid-template-columns: 1fr 1.05fr; align-items: center; gap: 24px; }
     .hero-logo { margin: 0 0 24px; width: 96px; height: 96px; }
     .hero .tagline, .hero .sub { margin-left: 0; }
     .hero-actions { justify-content: flex-start; }
-    .stage { margin-top: 0; height: 460px; }
-    .station { scale: 1.2; }
+    .stage-wrap { margin-top: 0; }
+    .stage { height: 540px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-    .pulse, .bank { animation: none; }
+    .pulse, .smoke .blob, .smoke .wisp { animation: none; }
     .batt-fill, .btn { transition: none; }
     .js .reveal { opacity: 1; transform: none; transition: none; }
   }
 </style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
 </head>
 <body>
+
+<div class="smoke" id="smoke" aria-hidden="true">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="wisp"></div>
+  <div class="wisp w2"></div>
+</div>
 
 <!-- Reusable clover mark -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -293,21 +305,18 @@
     <!-- One heart-shaped leaflet: narrow at the center, two soft lobes and a notch at the tip -->
     <path id="leaf" d="M0 -1.5C-3 -5 -11 -8.5 -11.6 -15.2C-12.1 -20.8 -6.8 -24.2 -3.6 -22.6C-1.8 -21.7 -0.6 -20.2 0 -18.4C0.6 -20.2 1.8 -21.7 3.6 -22.6C6.8 -24.2 12.1 -20.8 11.6 -15.2C11 -8.5 3 -5 0 -1.5Z"/>
     <symbol id="clover" viewBox="-26 -26 52 52">
-      <g transform="translate(0 -3) scale(.88)">
-        <g fill="#34C759">
-          <use href="#leaf" transform="rotate(45)"/>
-          <use href="#leaf" transform="rotate(135)"/>
-          <use href="#leaf" transform="rotate(225)"/>
-          <use href="#leaf" transform="rotate(315)"/>
-        </g>
-        <g stroke="#2A1530" stroke-width="0.9" stroke-linecap="round" opacity="0.35">
-          <path d="M0 -4V-17" transform="rotate(45)"/>
-          <path d="M0 -4V-17" transform="rotate(135)"/>
-          <path d="M0 -4V-17" transform="rotate(225)"/>
-          <path d="M0 -4V-17" transform="rotate(315)"/>
-        </g>
+      <g fill="#34C759">
+        <use href="#leaf" transform="rotate(45)"/>
+        <use href="#leaf" transform="rotate(135)"/>
+        <use href="#leaf" transform="rotate(225)"/>
+        <use href="#leaf" transform="rotate(315)"/>
       </g>
-      <path fill="#34C759" d="M-1.3 -3C-1.2 7 0.6 16 5.6 23.6C6.2 24.4 7.6 23.6 7.1 22.8C2.8 15.6 1.4 7 1.3 -3Z"/>
+      <g stroke="#2A1530" stroke-width="0.9" stroke-linecap="round" opacity="0.35">
+        <path d="M0 -4V-17" transform="rotate(45)"/>
+        <path d="M0 -4V-17" transform="rotate(135)"/>
+        <path d="M0 -4V-17" transform="rotate(225)"/>
+        <path d="M0 -4V-17" transform="rotate(315)"/>
+      </g>
     </symbol>
   </defs>
 </svg>
@@ -336,44 +345,22 @@
         <p class="sub">Tap-to-pay phone charging stations for bars and restaurants in Clarksville, Tennessee.</p>
         <div class="hero-actions">
           <a class="btn" href="#contact">Get a station</a>
-          <a class="btn btn-ghost" href="#how">How it works</a>
+          <a class="btn btn-ghost glass" href="#how">How it works</a>
         </div>
       </div>
 
-      <!-- 3D charging station, built from CSS 3D faces -->
-      <div class="stage" id="stage" aria-hidden="true">
-        <div class="floor"></div>
-        <div class="station" id="station">
-          <div class="face front">
-            <div class="screen">
-              <svg class="pulse"><use href="#clover"/></svg>
-              <span>Tap to charge</span>
-            </div>
-            <div class="tap">
-              <svg viewBox="0 0 24 24"><path d="M8.5 8.5a5 5 0 0 1 0 7"/><path d="M11.5 6a8.5 8.5 0 0 1 0 12"/><path d="M14.5 3.5a12 12 0 0 1 0 17"/></svg>
-            </div>
-            <div class="slots">
-              <div class="slot"><i></i></div>
-              <div class="slot"><i></i></div>
-              <div class="slot empty"></div>
-              <div class="slot"><i></i></div>
-            </div>
-          </div>
-          <div class="face back"></div>
-          <div class="face right"></div>
-          <div class="face left"></div>
-          <div class="face top"></div>
-          <div class="face bottom"></div>
-
-          <div class="bank">
-            <div class="b-face b-front"><span class="led"></span><svg><use href="#clover"/></svg></div>
-            <div class="b-face b-back"></div>
-            <div class="b-face b-right"></div>
-            <div class="b-face b-left"></div>
-            <div class="b-face b-top"></div>
-            <div class="b-face b-bottom"></div>
-          </div>
+      <div class="stage-wrap" id="stageWrap">
+        <div class="stage" id="stage" role="img" aria-label="3D example of a charging station. A power bank slides out showing its USB-C, Lightning and Micro-USB cables.">
+          <canvas id="scene"></canvas>
+          <div class="stage-loading">Loading 3D model…</div>
+          <span class="cord-label glass">USB-C</span>
+          <span class="cord-label glass">Lightning</span>
+          <span class="cord-label glass">Micro-USB</span>
         </div>
+        <p class="model-note glass">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.01"/></svg>
+          <span>Example model for reference. The final station may look different once we lock in our hardware supplier.</span>
+        </p>
       </div>
     </div>
   </section>
@@ -384,7 +371,7 @@
       <h2>How it works</h2>
       <p class="lede">Charge while you eat and drink. Your phone stays with you.</p>
       <div class="grid steps">
-        <div class="card step">
+        <div class="card glass step">
           <div class="step-icon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/><path d="M7 15h3"/></svg>
           </div>
@@ -394,17 +381,17 @@
             <p>Use any card or your phone's wallet at the station.</p>
           </div>
         </div>
-        <div class="card step">
+        <div class="card glass step">
           <div class="step-icon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M12.5 8l-2 4h3l-2 4"/></svg>
           </div>
           <div>
             <div class="step-num">STEP 2</div>
             <h3>Grab a charger</h3>
-            <p>A charged power bank pops out. It has cables for iPhone and Android built in.</p>
+            <p>A charged power bank pops out. It has USB-C, Lightning and Micro-USB cables built in.</p>
           </div>
         </div>
-        <div class="card step">
+        <div class="card glass step">
           <div class="step-icon">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M8 11l4 4 4-4"/><path d="M5 20h14"/></svg>
           </div>
@@ -418,33 +405,33 @@
     </div>
   </section>
 
-  <section id="venues" class="venues">
+  <section id="venues">
     <div class="wrap">
       <span class="eyebrow">For bars and restaurants</span>
       <h2>Why venues add one</h2>
       <p class="lede">You get a station on your counter. We handle the rest.</p>
       <div class="grid perks">
-        <div class="card perk">
+        <div class="card glass perk">
           <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
           <div><h3>Free to the venue</h3><p>No equipment cost. No setup fee.</p></div>
         </div>
-        <div class="card perk">
+        <div class="card glass perk">
           <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
           <div><h3>We install and service it</h3><p>We set it up, keep it stocked, and fix anything that breaks.</p></div>
         </div>
-        <div class="card perk">
+        <div class="card glass perk">
           <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
           <div><h3>Monthly revenue share</h3><p>You get a cut of every rental, paid each month.</p></div>
         </div>
-        <div class="card perk">
+        <div class="card glass perk">
           <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
           <div><h3>Customers stay longer</h3><p>People don't leave early because their phone is about to die.</p></div>
         </div>
-        <div class="card perk">
+        <div class="card glass perk">
           <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
           <div><h3>No more phones behind the bar</h3><p>Staff stop managing chargers and get back to serving.</p></div>
         </div>
-        <div class="card perk">
+        <div class="card glass perk">
           <span class="check"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
           <div><h3>Remove it anytime</h3><p>Give us 30 days notice and we'll pick it up.</p></div>
         </div>
@@ -457,21 +444,21 @@
       <span class="eyebrow">Questions</span>
       <h2>FAQ</h2>
       <div class="faq">
-        <details>
+        <details class="glass">
           <summary>What if someone doesn't return it?</summary>
           <p>Their card is charged for the power bank and they keep it. The venue never pays for a lost unit, and we restock the station.</p>
         </details>
-        <details>
+        <details class="glass">
           <summary>Is it safe?</summary>
           <p>Yes. The power banks use certified batteries, and every station is insured.</p>
         </details>
-        <details>
+        <details class="glass">
           <summary>Who fixes it if something goes wrong?</summary>
           <p>We do. Call or text us and we'll come out. You never pay for repairs.</p>
         </details>
-        <details>
+        <details class="glass">
           <summary>How much space does it take?</summary>
-          <p>About the footprint of a countertop napkin holder. It sits on a counter or bar top and needs one standard outlet.</p>
+          <p>About the size of a toaster. It sits on a counter or bar top and plugs into a standard outlet.</p>
         </details>
       </div>
     </div>
@@ -479,18 +466,18 @@
 
   <section id="contact">
     <div class="wrap">
-      <div class="card contact-card">
+      <div class="card glass contact-card">
         <svg class="clover pulse" aria-hidden="true"><use href="#clover"/></svg>
         <h2>Get a station</h2>
-        <p class="lede" style="margin-left:auto;margin-right:auto">Tell us about your venue. We'll come by, take a look, and answer your questions.</p>
+        <p class="lede">Tell us about your venue. We'll come by, take a look, and answer your questions.</p>
         <div class="contact-lines">
-          <a class="contact-line" href="mailto:coby.a.smi@gmail.com">
+          <a class="contact-line glass" href="mailto:coby.a.smi@gmail.com">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg>
-            coby.a.smi@gmail.com
+            <span>coby.a.smi@gmail.com</span>
           </a>
-          <a class="contact-line" href="tel:+19313399134">
+          <a class="contact-line glass" href="tel:+19313399134">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
-            (931) 339-9134
+            <span>(931) 339-9134</span>
           </a>
         </div>
         <p class="local">
@@ -508,12 +495,12 @@
 </footer>
 
 <script>
+  // Battery fills as you scroll
   (function () {
     var fill = document.getElementById('battFill');
     var pct = document.getElementById('battPct');
     var battery = document.getElementById('battery');
     var ticking = false;
-
     function update() {
       var max = document.documentElement.scrollHeight - window.innerHeight;
       var p = max > 0 ? window.scrollY / max : 1;
@@ -523,61 +510,28 @@
       battery.classList.toggle('full', level >= 100);
       ticking = false;
     }
-
     window.addEventListener('scroll', function () {
       if (!ticking) { ticking = true; requestAnimationFrame(update); }
     }, { passive: true });
     window.addEventListener('resize', update);
     update();
-
     document.getElementById('year').textContent = new Date().getFullYear();
   })();
 
-  // 3D station: gentle sway, follows the pointer, turns as you scroll
-  (function () {
-    var station = document.getElementById('station');
-    var stage = document.getElementById('stage');
-    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!station || reduce) return;
+  // Glass glare follows the pointer
+  document.addEventListener('pointermove', function (e) {
+    var el = e.target.closest && e.target.closest('.glass');
+    if (!el) return;
+    var r = el.getBoundingClientRect();
+    el.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+    el.style.setProperty('--my', (e.clientY - r.top) + 'px');
+  }, { passive: true });
 
-    var tx = 0, ty = 0, cx = 0, cy = 0, visible = true, running = false;
-
-    function onMove(x, y) {
-      tx = (x / window.innerWidth - 0.5) * 36;
-      ty = (y / window.innerHeight - 0.5) * -14;
-    }
-    window.addEventListener('pointermove', function (e) { onMove(e.clientX, e.clientY); }, { passive: true });
-    stage.addEventListener('touchmove', function (e) {
-      var t = e.touches[0]; if (t) onMove(t.clientX, t.clientY);
-    }, { passive: true });
-
-    function frame(now) {
-      if (!visible) { running = false; return; }
-      var t = now / 1000;
-      cx += (tx - cx) * 0.06;
-      cy += (ty - cy) * 0.06;
-      var scroll = Math.min(window.scrollY, 700) * 0.09;
-      var ry = -30 + Math.sin(t * 0.6) * 9 + cx + scroll;
-      var rx = -14 + Math.sin(t * 0.45) * 2 + cy;
-      station.style.transform = 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)';
-      requestAnimationFrame(frame);
-    }
-    function start() { if (!running) { running = true; requestAnimationFrame(frame); } }
-
-    if ('IntersectionObserver' in window) {
-      new IntersectionObserver(function (entries) {
-        visible = entries[0].isIntersecting;
-        if (visible) start();
-      }).observe(stage);
-    }
-    start();
-  })();
-
-  // Fade cards in as they scroll into view
+  // Fade content in as it scrolls into view
   (function () {
     if (!('IntersectionObserver' in window)) return;
     document.documentElement.classList.add('js');
-    var items = document.querySelectorAll('.card, details, section h2, .lede');
+    var items = document.querySelectorAll('section:not(.hero) .card, details, section:not(.hero) h2, section:not(.hero) .lede');
     var io = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
@@ -589,6 +543,458 @@
       io.observe(el);
     });
   })();
+
+  // Smoke texture: fractal noise tinted purple, drawn once into a seamless tile
+  (function () {
+    var svg = "<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='f' x='0' y='0' width='100%' height='100%'>" +
+      "<feTurbulence type='fractalNoise' baseFrequency='0.0028 0.0055' numOctaves='4' seed='11' stitchTiles='stitch'/>" +
+      "<feColorMatrix values='0 0 0 0 0.62  0 0 0 0 0.42  0 0 0 0 0.72  1.7 0 0 0 -0.78'/></filter>" +
+      "<rect width='900' height='900' filter='url(#f)'/></svg>";
+    var img = new Image();
+    img.onload = function () {
+      var c = document.createElement('canvas'); c.width = c.height = 900;
+      c.getContext('2d').drawImage(img, 0, 0);
+      c.toBlob(function (blob) {
+        if (!blob) return;
+        var smoke = document.getElementById('smoke');
+        smoke.style.setProperty('--wisp', 'url(' + URL.createObjectURL(blob) + ')');
+        smoke.classList.add('ready');
+      });
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  })();
+
+  // If the 3D model can't load (no WebGL, offline), hide that area cleanly
+  setTimeout(function () {
+    if (!window.__stageReady) document.getElementById('stageWrap').classList.add('no-3d');
+  }, 9000);
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+  import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+  import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+  const wrap = document.getElementById('stageWrap');
+  const stage = document.getElementById('stage');
+  const canvas = document.getElementById('scene');
+  const labels = Array.from(stage.querySelectorAll('.cord-label'));
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  try {
+    init();
+  } catch (err) {
+    console.warn('3D station unavailable:', err);
+    wrap.classList.add('no-3d');
+  }
+
+  function init() {
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.95;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.VSMShadowMap;
+
+    const scene = new THREE.Scene();
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+    const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+
+    // Lights: soft key from above-right, plum rim from behind-left
+    const key = new THREE.DirectionalLight(0xffffff, 1.5);
+    key.position.set(2.5, 10, 7);
+    key.castShadow = true;
+    key.shadow.mapSize.set(2048, 2048);
+    Object.assign(key.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6, near: 1, far: 30 });
+    key.shadow.bias = -0.0004;
+    key.shadow.radius = 16;
+    key.shadow.blurSamples = 24;
+    key.shadow.normalBias = 0.02;
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0xC89BE0, 0.9);
+    rim.position.set(-7, 4, -5);
+    scene.add(rim);
+    scene.add(new THREE.HemisphereLight(0xF3EEF5, 0x2A1530, 0.35));
+
+    const FLOOR_Y = -2.36;
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ color: 0x0E0412, opacity: 0.45 }));
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = FLOOR_Y;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Faint green glow on the counter under the station
+    const glow = new THREE.Mesh(
+      new THREE.PlaneGeometry(9, 5),
+      new THREE.MeshBasicMaterial({ map: radialTexture('rgba(52,199,89,0.55)'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.35 })
+    );
+    glow.rotation.x = -Math.PI / 2;
+    glow.position.y = FLOOR_Y + 0.003;
+
+    // ---------- Materials ----------
+    const shell = new THREE.MeshPhysicalMaterial({ color: 0xF6F4F8, roughness: 0.34, clearcoat: 0.8, clearcoatRoughness: 0.22 });
+    const trim = new THREE.MeshPhysicalMaterial({ color: 0xD9D4DE, roughness: 0.45, clearcoat: 0.3 });
+    const recess = new THREE.MeshStandardMaterial({ color: 0x17121B, roughness: 0.7 });
+    const glassBlack = new THREE.MeshPhysicalMaterial({ color: 0x07040A, roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.05 });
+    const bankShell = new THREE.MeshPhysicalMaterial({ color: 0xF1EEF4, roughness: 0.38, clearcoat: 0.6, clearcoatRoughness: 0.3 });
+    const cableMat = new THREE.MeshStandardMaterial({ color: 0x2D2632, roughness: 0.55 });
+    const metal = new THREE.MeshStandardMaterial({ color: 0xD4D7DD, metalness: 1, roughness: 0.22 });
+    const gold = new THREE.MeshStandardMaterial({ color: 0xE3C27A, metalness: 1, roughness: 0.3 });
+
+    const shadowed = (m) => { m.castShadow = true; return m; };
+
+    // ---------- Station ----------
+    const station = new THREE.Group();
+    scene.add(station);
+    station.add(glow);
+
+    const W = 3.2, H = 4.4, D = 1.9, FRONT = D / 2;
+    const body = shadowed(new THREE.Mesh(new RoundedBoxGeometry(W, H, D, 8, 0.24), shell));
+    station.add(body);
+    const foot = shadowed(new THREE.Mesh(new RoundedBoxGeometry(W - 0.25, 0.16, D - 0.25, 4, 0.06), trim));
+    foot.position.y = -H / 2 - 0.08;
+    station.add(foot);
+
+    // Screen
+    const bezel = shadowed(new THREE.Mesh(new RoundedBoxGeometry(2.62, 1.5, 0.08, 4, 0.05), glassBlack));
+    bezel.position.set(0, 1.3, FRONT);
+    station.add(bezel);
+    const screenTex = screenTexture();
+    const screenMat = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false });
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.42, 1.3), screenMat);
+    screen.position.set(0, 1.3, FRONT + 0.042);
+    station.add(screen);
+    const screenGloss = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.42, 1.3),
+      new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.04, transparent: true, opacity: 0.18, clearcoat: 1 })
+    );
+    screenGloss.position.set(0, 1.3, FRONT + 0.045);
+    station.add(screenGloss);
+
+    // Card reader pad
+    const pad = shadowed(new THREE.Mesh(new RoundedBoxGeometry(1.6, 0.62, 0.06, 4, 0.03), trim));
+    pad.position.set(0, 0.2, FRONT);
+    station.add(pad);
+    const padIcon = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.45, 0.5),
+      new THREE.MeshBasicMaterial({ map: readerTexture(), transparent: true, toneMapped: false })
+    );
+    padIcon.position.set(0, 0.2, FRONT + 0.032);
+    station.add(padIcon);
+
+    // Slots and power banks
+    const BANK_W = 0.5, BANK_H = 1.36, BANK_D = 0.9;
+    const SLOT_Y = -1.0;
+    const bankGeo = new RoundedBoxGeometry(BANK_W, BANK_H, BANK_D, 4, 0.08);
+    const faceTex = bankFaceTexture();
+    const faceMat = new THREE.MeshBasicMaterial({ map: faceTex, transparent: true, toneMapped: false });
+    const slotXs = [-1.08, -0.36, 0.36, 1.08];
+    const DOCK_Z = FRONT - BANK_D / 2 + 0.07;
+
+    function makeBank() {
+      const g = new THREE.Group();
+      g.add(shadowed(new THREE.Mesh(bankGeo, bankShell)));
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(BANK_W - 0.08, BANK_H - 0.1), faceMat);
+      face.position.z = BANK_D / 2 + 0.003;
+      g.add(face);
+      return g;
+    }
+
+    slotXs.forEach((x, i) => {
+      const slot = new THREE.Mesh(new RoundedBoxGeometry(0.62, 1.52, 0.05, 4, 0.05), recess);
+      slot.position.set(x, SLOT_Y, FRONT + 0.004);
+      station.add(slot);
+      if (i !== 2) {
+        const b = makeBank();
+        b.position.set(x, SLOT_Y, DOCK_Z);
+        station.add(b);
+      }
+    });
+
+    // The power bank that comes out, with three built-in cables
+    const bank = makeBank();
+    station.add(bank);
+
+    const UP = new THREE.Vector3(0, 1, 0);
+    const TUB = 90, RAD = 10;
+    const cordDefs = [
+      { tip: 'c', pts: [[-0.12, 0.62, 0.2], [-0.13, 0.84, 0.26], [-0.28, 0.99, 0.36], [-0.5, 0.9, 0.44], [-0.62, 0.62, 0.5], [-0.64, 0.3, 0.5]] },
+      { tip: 'l', pts: [[0, 0.62, 0.2], [0, 0.88, 0.26], [0.01, 1.1, 0.36], [0, 1.3, 0.48], [-0.01, 1.48, 0.56]] },
+      { tip: 'm', pts: [[0.12, 0.62, 0.2], [0.13, 0.84, 0.28], [0.28, 0.99, 0.4], [0.5, 0.9, 0.5], [0.62, 0.62, 0.56], [0.64, 0.3, 0.56]] },
+    ];
+    const cords = cordDefs.map((def) => {
+      const curve = new THREE.CatmullRomCurve3(def.pts.map((p) => new THREE.Vector3(...p)), false, 'centripetal');
+      const geo = new THREE.TubeGeometry(curve, TUB, 0.024, RAD, false);
+      const tube = new THREE.Mesh(geo, cableMat);
+      tube.castShadow = true;
+      bank.add(tube);
+      const grommet = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.03, 20), cableMat);
+      grommet.position.set(def.pts[0][0], BANK_H / 2 + 0.005, def.pts[0][2]);
+      bank.add(grommet);
+      const plug = connector(def.tip);
+      bank.add(plug);
+      return { curve, geo, tube, plug, grommet };
+    });
+
+    function connector(type) {
+      const g = new THREE.Group();
+      const relief = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.026, 0.08, 16), cableMat);
+      relief.position.y = 0.03;
+      const boot = shadowed(new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.17, 0.07, 3, 0.028), cableMat));
+      boot.position.y = 0.15;
+      g.add(relief, boot);
+      let tip;
+      if (type === 'c') {
+        tip = new THREE.Mesh(new RoundedBoxGeometry(0.085, 0.085, 0.034, 3, 0.015), metal);
+        tip.position.y = 0.28;
+      } else if (type === 'l') {
+        tip = new THREE.Mesh(new RoundedBoxGeometry(0.06, 0.09, 0.018, 2, 0.008), metal);
+        tip.position.y = 0.28;
+        const pins = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.02), gold);
+        pins.position.y = 0.29;
+        g.add(pins);
+      } else {
+        tip = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.065, 0.024), metal);
+        tip.position.y = 0.268;
+      }
+      g.add(tip);
+      return g;
+    }
+
+    function setCords(p) {
+      cords.forEach((c) => {
+        const seg = Math.round(p * TUB);
+        const on = seg > 1;
+        c.tube.visible = on;
+        c.plug.visible = on;
+        c.grommet.visible = p > 0.001;
+        if (!on) return;
+        c.geo.setDrawRange(0, seg * RAD * 6);
+        const u = seg / TUB;
+        c.plug.position.copy(c.curve.getPointAt(u));
+        c.plug.quaternion.setFromUnitVectors(UP, c.curve.getTangentAt(u).normalize());
+      });
+    }
+
+    // ---------- Animation timeline (seconds) ----------
+    const T = 11;
+    const SLOT = new THREE.Vector3(slotXs[2], SLOT_Y, DOCK_Z);
+    const PULLED = new THREE.Vector3(slotXs[2], SLOT_Y, DOCK_Z + 1.25);
+    const CTRL = new THREE.Vector3(1.9, 0.2, 2.7);
+    const SHOW = new THREE.Vector3(2.6, 0.15, 1.5);
+    const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const seg = (t, a, b) => Math.min(Math.max((t - a) / (b - a), 0), 1);
+    const bez = (a, c, b, k, out) => out.set(
+      (1 - k) * (1 - k) * a.x + 2 * (1 - k) * k * c.x + k * k * b.x,
+      (1 - k) * (1 - k) * a.y + 2 * (1 - k) * k * c.y + k * k * b.y,
+      (1 - k) * (1 - k) * a.z + 2 * (1 - k) * k * c.z + k * k * b.z
+    );
+    const SHOW_RX = -0.05, SHOW_SCALE = 1.35;
+
+    // yaw = current turn of the station; the bank turns to face the viewer
+    function pose(t, yaw) {
+      const SHOW_RY = -yaw;
+      let ry = 0, rx = 0, cord = 0, sc = 1;
+      const pos = bank.position;
+      if (t < 1.0) pos.copy(SLOT);
+      else if (t < 1.8) pos.lerpVectors(SLOT, PULLED, ease(seg(t, 1.0, 1.8)));
+      else if (t < 3.0) {
+        const k = ease(seg(t, 1.8, 3.0));
+        bez(PULLED, CTRL, SHOW, k, pos);
+        ry = SHOW_RY * k; rx = SHOW_RX * k; sc = 1 + (SHOW_SCALE - 1) * k;
+      } else if (t < 8.0) {
+        const hold = seg(t, 3.0, 8.0);
+        const env = Math.sin(Math.PI * hold);
+        pos.copy(SHOW);
+        pos.y += Math.sin((t - 3.0) * 1.6) * 0.05 * env;
+        ry = SHOW_RY + Math.sin((t - 3.0) * 1.1) * 0.28 * env;
+        rx = SHOW_RX; sc = SHOW_SCALE;
+        cord = t < 3.9 ? ease(seg(t, 3.0, 3.9)) : t < 7.2 ? 1 : 1 - ease(seg(t, 7.2, 8.0));
+      } else if (t < 9.2) {
+        const k = ease(seg(t, 8.0, 9.2));
+        bez(SHOW, CTRL, PULLED, k, pos);
+        ry = SHOW_RY * (1 - k); rx = SHOW_RX * (1 - k); sc = 1 + (SHOW_SCALE - 1) * (1 - k);
+      } else if (t < 9.9) pos.lerpVectors(PULLED, SLOT, ease(seg(t, 9.2, 9.9)));
+      else pos.copy(SLOT);
+      bank.rotation.set(rx, ry, 0);
+      bank.scale.setScalar(sc);
+      setCords(cord);
+      return cord;
+    }
+
+    // ---------- Interaction ----------
+    let tx = 0, ty = 0, cx = 0, cy = 0;
+    const onMove = (x, y) => {
+      tx = (x / window.innerWidth - 0.5) * 2;
+      ty = (y / window.innerHeight - 0.5) * 2;
+    };
+    window.addEventListener('pointermove', (e) => onMove(e.clientX, e.clientY), { passive: true });
+    stage.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (t) onMove(t.clientX, t.clientY); }, { passive: true });
+
+    // ---------- Sizing ----------
+    const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
+    let w = 1, h = 1;
+    function resize() {
+      w = stage.clientWidth; h = stage.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      // fit about 6.4 x 6.0 world units in view
+      const fit = Math.max(6.0, 6.4 / camera.aspect);
+      const d = fit / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+      camera.position.set(0, d * 0.16, d);
+      camera.lookAt(0, -0.1, 0);
+      camera.updateProjectionMatrix();
+      station.position.x = -0.8;
+    }
+
+    const rects = [];
+    function placeLabels(cord) {
+      const show = cord > 0.97;
+      bank.localToWorld(tmp2.set(0, 0.6, 0.3)).project(camera);
+      const bx = (tmp2.x * 0.5 + 0.5) * w, by = (-tmp2.y * 0.5 + 0.5) * h;
+      cords.forEach((c, i) => {
+        const el = labels[i];
+        el.classList.toggle('show', show);
+        if (!show) return;
+        c.plug.localToWorld(tmp.set(0, 0.3, 0)).project(camera);
+        let x = (tmp.x * 0.5 + 0.5) * w, y = (-tmp.y * 0.5 + 0.5) * h;
+        let dx = x - bx, dy = y - by;
+        const len = Math.hypot(dx, dy) || 1;
+        x += (dx / len) * 30; y += (dy / len) * 22;
+        const lw = el.offsetWidth, lh = el.offsetHeight;
+        x = Math.min(Math.max(x - lw / 2, 4), w - lw - 4);
+        y = Math.min(Math.max(y - lh / 2, 4), h - lh - 4);
+        rects[i] = { x, y, w: lw, h: lh };
+      });
+      if (!show) return;
+      // nudge apart any labels that overlap
+      for (let i = 1; i < rects.length; i++) {
+        for (let j = 0; j < i; j++) {
+          const a = rects[j], b = rects[i];
+          if (a.x < b.x + b.w + 6 && b.x < a.x + a.w + 6 && a.y < b.y + b.h + 4 && b.y < a.y + a.h + 4) {
+            b.y = a.y + a.h + 6;
+          }
+        }
+      }
+      rects.forEach((r, i) => { labels[i].style.transform = 'translate(' + r.x.toFixed(1) + 'px,' + r.y.toFixed(1) + 'px)'; });
+    }
+
+    const clock = new THREE.Clock();
+    function frame() {
+      const e = clock.getElapsedTime();
+      cx += (tx - cx) * 0.05;
+      cy += (ty - cy) * 0.05;
+      const scrollK = Math.min(window.scrollY / 700, 1);
+      station.rotation.y = -0.42 + Math.sin(e * 0.45) * 0.07 + cx * 0.22 + scrollK * 0.3;
+      station.rotation.x = cy * 0.05;
+      const cord = pose(e % T, station.rotation.y);
+      const pulse = 0.82 + 0.18 * (0.5 + 0.5 * Math.sin(e * (2 * Math.PI / 2.8)));
+      screenMat.color.setScalar(pulse);
+      renderer.render(scene, camera);
+      placeLabels(cord);
+    }
+    function still() {
+      station.rotation.set(0, -0.42, 0);
+      const cord = pose(5.5, -0.42);
+      renderer.render(scene, camera);
+      placeLabels(cord);
+    }
+
+    resize();
+    new ResizeObserver(() => { resize(); if (reduce) still(); }).observe(stage);
+
+    if (reduce) {
+      still();
+    } else {
+      let running = false;
+      const io = new IntersectionObserver((entries) => {
+        const vis = entries[0].isIntersecting;
+        if (vis && !running) { renderer.setAnimationLoop(frame); running = true; }
+        else if (!vis && running) { renderer.setAnimationLoop(null); running = false; }
+      });
+      io.observe(stage);
+      frame();
+    }
+    stage.classList.add('ready');
+    window.__stageReady = true;
+  }
+
+  // ---------- Canvas textures ----------
+  function leafPath() {
+    return new Path2D('M0 -1.5C-3 -5 -11 -8.5 -11.6 -15.2C-12.1 -20.8 -6.8 -24.2 -3.6 -22.6C-1.8 -21.7 -0.6 -20.2 0 -18.4C0.6 -20.2 1.8 -21.7 3.6 -22.6C6.8 -24.2 12.1 -20.8 11.6 -15.2C11 -8.5 3 -5 0 -1.5Z');
+  }
+  function drawClover(ctx, x, y, size, color) {
+    const leaf = leafPath();
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(size / 52, size / 52);
+    ctx.fillStyle = color;
+    [45, 135, 225, 315].forEach((r) => { ctx.save(); ctx.rotate(r * Math.PI / 180); ctx.fill(leaf); ctx.restore(); });
+    ctx.restore();
+  }
+  function makeTex(c) {
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
+    return t;
+  }
+  function screenTexture() {
+    const c = document.createElement('canvas'); c.width = 1024; c.height = 550;
+    const g = c.getContext('2d');
+    const bg = g.createLinearGradient(0, 0, 0, c.height);
+    bg.addColorStop(0, '#160C1C'); bg.addColorStop(1, '#09050C');
+    g.fillStyle = bg; g.fillRect(0, 0, c.width, c.height);
+    const halo = g.createRadialGradient(512, 215, 10, 512, 215, 260);
+    halo.addColorStop(0, 'rgba(52,199,89,0.22)'); halo.addColorStop(1, 'rgba(52,199,89,0)');
+    g.fillStyle = halo; g.fillRect(0, 0, c.width, c.height);
+    drawClover(g, 512, 205, 190, '#34C759');
+    g.textAlign = 'center';
+    g.fillStyle = '#34C759';
+    g.font = '600 54px -apple-system, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif';
+    if ('letterSpacing' in g) g.letterSpacing = '8px';
+    g.fillText('TAP TO CHARGE', 512, 400);
+    g.fillStyle = 'rgba(243,238,245,0.55)';
+    g.font = '500 30px -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif';
+    if ('letterSpacing' in g) g.letterSpacing = '2px';
+    g.fillText('Clover Vending', 512, 462);
+    return makeTex(c);
+  }
+  function readerTexture() {
+    const c = document.createElement('canvas'); c.width = 768; c.height = 264;
+    const g = c.getContext('2d');
+    g.strokeStyle = '#6F6577'; g.lineWidth = 11; g.lineCap = 'round';
+    const cx = 250, cy = 132;
+    [38, 68, 98].forEach((r) => { g.beginPath(); g.arc(cx - 60, cy, r, -Math.PI / 4, Math.PI / 4); g.stroke(); });
+    g.fillStyle = '#6F6577';
+    g.font = '700 46px -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif';
+    if ('letterSpacing' in g) g.letterSpacing = '4px';
+    g.fillText('TAP CARD', 330, 148);
+    return makeTex(c);
+  }
+  function bankFaceTexture() {
+    const c = document.createElement('canvas'); c.width = 160; c.height = 480;
+    const g = c.getContext('2d');
+    for (let i = 0; i < 4; i++) {
+      const y = 44 + i * 22;
+      g.shadowColor = 'rgba(52,199,89,0.9)'; g.shadowBlur = 10;
+      g.fillStyle = '#34C759';
+      g.beginPath(); g.roundRect ? g.roundRect(56, y, 48, 10, 5) : g.rect(56, y, 48, 10); g.fill();
+    }
+    g.shadowBlur = 0;
+    drawClover(g, 80, 300, 70, '#34C759');
+    return makeTex(c);
+  }
+  function radialTexture(color) {
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const g = c.getContext('2d');
+    const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+    r.addColorStop(0, color); r.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = r; g.fillRect(0, 0, 256, 256);
+    return makeTex(c);
+  }
 </script>
 </body>
 </html>
