@@ -591,7 +591,8 @@
     const recess = new THREE.MeshStandardMaterial({ color: 0x1A171D, roughness: 0.75 });
     const glassBlack = new THREE.MeshPhysicalMaterial({ color: 0x060408, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.04 });
     const blackPlastic = new THREE.MeshPhysicalMaterial({ color: 0x111014, roughness: 0.35, clearcoat: 0.6 });
-    const bankShell = new THREE.MeshPhysicalMaterial({ color: 0xF4F4F6, roughness: 0.36, clearcoat: 0.6, clearcoatRoughness: 0.3 });
+    const bankShell = new THREE.MeshPhysicalMaterial({ color: 0x7E7F84, roughness: 0.55, clearcoat: 0.25, clearcoatRoughness: 0.5 });
+    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xEC6A1E, roughness: 0.5 });
     const greenLight = new THREE.MeshBasicMaterial({ color: 0x3BDB63, toneMapped: false });
     const cableMat = new THREE.MeshStandardMaterial({ color: 0x2D2632, roughness: 0.55 });
     const metal = new THREE.MeshStandardMaterial({ color: 0xD4D7DD, metalness: 1, roughness: 0.22 });
@@ -711,25 +712,34 @@
     hinge.position.copy(armB);
     station.add(hinge);
 
-    // ---------- Slots and power banks (2 x 2 in the middle and bottom sections) ----------
-    const BW = 0.94, BT = 0.2, BL = 1.5;
-    const bankGeo = new RoundedBoxGeometry(BW, BT, BL, 5, 0.095);
+    // Power bank, modeled on the BST-0155: 147.5 x 69.8 x 14.5 mm, matte gray,
+    // three flat ribbon cables stored in a bay on the back.
+    // Local axes: x = width, y = thickness (+y is the cable side), z = length (+z is the end you see in the slot).
+    const BW = 0.94, BT = 0.195, BL = 1.99;
+    const bankBodyGeo = prism(BW - 0.14, BL - 0.14, 0.12, BT, 0.07);
+    bankBodyGeo.translate(0, -BT / 2, 0);
     const bezelGeo = pill(1.08, 0.3, 0.03);
     const holeGeo = pill(0.98, 0.22, 0.02);
     const DOCK_Z = FRONT + 0.03 - BL / 2;
-    const bankTopTex = bankTopTexture();
+    const backArt = bankBackTexture();
+    const frontArt = bankFrontTexture();
 
-    function makeBank() {
+    function makeBank(withCables) {
       const g = new THREE.Group();
       g.rotation.order = 'YXZ';
-      g.add(shadowed(new THREE.Mesh(bankGeo, bankShell)));
-      const led = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.032), greenLight);
+      g.add(shadowed(new THREE.Mesh(bankBodyGeo, bankShell)));
+      const led = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.03), greenLight);
       led.position.z = BL / 2 + 0.002;
       g.add(led);
-      const art = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 1.3), new THREE.MeshBasicMaterial({ map: bankTopTex, transparent: true, toneMapped: false }));
-      art.rotation.x = -Math.PI / 2;
-      art.position.y = BT / 2 + 0.002;
-      g.add(art);
+      if (!withCables) return g;
+      const back = new THREE.Mesh(new THREE.PlaneGeometry(BW - 0.06, BL - 0.06), new THREE.MeshStandardMaterial({ map: backArt, transparent: true, roughness: 0.6 }));
+      back.rotation.set(-Math.PI / 2, 0, 0);
+      back.position.y = BT / 2 + 0.002;
+      g.add(back);
+      const front = new THREE.Mesh(new THREE.PlaneGeometry(BW - 0.06, BL - 0.06), new THREE.MeshStandardMaterial({ map: frontArt, transparent: true, roughness: 0.6 }));
+      front.rotation.set(Math.PI / 2, 0, 0);
+      front.position.y = -BT / 2 - 0.002;
+      g.add(front);
       return g;
     }
 
@@ -749,85 +759,68 @@
       hole.position.set(p.x, p.y, FRONT + 0.002);
       station.add(hole);
       if (i !== MOVER) {
-        const b = makeBank();
+        const b = makeBank(false);
         b.position.set(p.x, p.y, DOCK_Z);
         station.add(b);
       }
     });
 
-    // The power bank that comes out, with three built-in cables at its back end
-    const bank = makeBank();
+    const bank = makeBank(true);
     station.add(bank);
 
-    const UP = new THREE.Vector3(0, 1, 0);
-    const TUB = 90, RAD = 10;
-    const E = -BL / 2;
+    // Ribbon cables: hinged at the bottom end of the bay, lying flat and pointing toward the top end.
+    // Order matches the labels: USB-C, Lightning, Micro-USB. Left to right on the bank: Lightning, USB-C, Micro.
+    const RIB_LEN = 0.6, RIB_W = 0.12;
     const cordDefs = [
-      { tip: 'c', pts: [[-0.3, 0, E + 0.03], [-0.32, 0.02, E - 0.18], [-0.48, 0.06, E - 0.36], [-0.7, 0.1, E - 0.44], [-0.86, 0.12, E - 0.3], [-0.9, 0.12, E - 0.05]] },
-      { tip: 'l', pts: [[0, 0, E + 0.03], [0, 0.02, E - 0.2], [0.01, 0.06, E - 0.43], [0, 0.1, E - 0.67], [-0.01, 0.12, E - 0.85]] },
-      { tip: 'm', pts: [[0.3, 0, E + 0.03], [0.32, 0.02, E - 0.18], [0.48, 0.07, E - 0.36], [0.7, 0.11, E - 0.44], [0.86, 0.13, E - 0.3], [0.9, 0.13, E - 0.05]] },
+      { tip: 'c', x: 0, fan: 0 },
+      { tip: 'l', x: -0.165, fan: -1 },
+      { tip: 'm', x: 0.165, fan: 1 },
     ];
     const cords = cordDefs.map((def) => {
-      const curve = new THREE.CatmullRomCurve3(def.pts.map((p) => new THREE.Vector3(...p)), false, 'centripetal');
-      const geo = new THREE.TubeGeometry(curve, TUB, 0.026, RAD, false);
-      const tube = new THREE.Mesh(geo, cableMat);
-      tube.castShadow = true;
-      bank.add(tube);
-      const grommet = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 20), cableMat);
-      grommet.rotation.x = Math.PI / 2;
-      grommet.position.set(def.pts[0][0], 0, E - 0.005);
-      bank.add(grommet);
-      const plug = connector(def.tip);
-      bank.add(plug);
-      return { curve, geo, tube, plug, grommet };
+      const fanG = new THREE.Group();
+      fanG.position.set(def.x, BT / 2 + 0.008, -BL / 2 + 0.05);
+      const lift = new THREE.Group();
+      fanG.add(lift);
+      const ribbon = shadowed(new THREE.Mesh(new RoundedBoxGeometry(RIB_W, 0.022, RIB_LEN, 2, 0.01), ribbonMat));
+      ribbon.position.z = RIB_LEN / 2;
+      lift.add(ribbon);
+      const boot = shadowed(new THREE.Mesh(new RoundedBoxGeometry(0.145, 0.05, 0.17, 3, 0.02), ribbonMat));
+      boot.position.z = RIB_LEN + 0.07;
+      lift.add(boot);
+      let tip;
+      if (def.tip === 'c') {
+        tip = new THREE.Mesh(new RoundedBoxGeometry(0.09, 0.036, 0.09, 3, 0.016), metal);
+      } else if (def.tip === 'l') {
+        tip = new THREE.Mesh(new RoundedBoxGeometry(0.066, 0.02, 0.1, 2, 0.009), metal);
+        const pins = new THREE.Mesh(new THREE.BoxGeometry(0.044, 0.022, 0.06), gold);
+        pins.position.set(0, 0, RIB_LEN + 0.22);
+        lift.add(pins);
+      } else {
+        tip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.026, 0.07), metal);
+      }
+      tip.position.z = RIB_LEN + 0.2;
+      lift.add(tip);
+      const end = new THREE.Object3D();
+      end.position.z = RIB_LEN + 0.26;
+      lift.add(end);
+      bank.add(fanG);
+      return { fanG, lift, end, fan: def.fan };
     });
 
-    function connector(type) {
-      const g = new THREE.Group();
-      const relief = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.028, 0.08, 16), cableMat);
-      relief.position.y = 0.03;
-      const boot = shadowed(new THREE.Mesh(new RoundedBoxGeometry(0.13, 0.18, 0.075, 3, 0.03), cableMat));
-      boot.position.y = 0.15;
-      g.add(relief, boot);
-      let tip;
-      if (type === 'c') {
-        tip = new THREE.Mesh(new RoundedBoxGeometry(0.09, 0.09, 0.036, 3, 0.016), metal);
-        tip.position.y = 0.285;
-      } else if (type === 'l') {
-        tip = new THREE.Mesh(new RoundedBoxGeometry(0.064, 0.095, 0.02, 2, 0.009), metal);
-        tip.position.y = 0.285;
-        const pins = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.055, 0.022), gold);
-        pins.position.y = 0.295;
-        g.add(pins);
-      } else {
-        tip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.07, 0.026), metal);
-        tip.position.y = 0.275;
-      }
-      g.add(tip);
-      return g;
-    }
-
+    // p = 0: stored flat in the bay. p = 1: flipped out from the bank and fanned.
     function setCords(p) {
       cords.forEach((c) => {
-        const seg = Math.round(p * TUB);
-        const on = seg > 1;
-        c.tube.visible = on;
-        c.plug.visible = on;
-        c.grommet.visible = p > 0.001;
-        if (!on) return;
-        c.geo.setDrawRange(0, seg * RAD * 6);
-        const u = seg / TUB;
-        c.plug.position.copy(c.curve.getPointAt(u));
-        c.plug.quaternion.setFromUnitVectors(UP, c.curve.getTangentAt(u).normalize());
+        c.lift.rotation.x = -2.75 * p;
+        c.fanG.rotation.y = -c.fan * 0.5 * p;
       });
     }
 
     // ---------- Animation timeline (seconds) ----------
     const T = 11;
     const SLOT = new THREE.Vector3(slots[MOVER].x, slots[MOVER].y, DOCK_Z);
-    const PULLED = new THREE.Vector3(SLOT.x, SLOT.y, DOCK_Z + 1.7);
-    const CTRL = new THREE.Vector3(2.4, SLOT.y + 0.9, 3.3);
-    const SHOW = new THREE.Vector3(3.45, 2.05, 1.3);
+    const PULLED = new THREE.Vector3(SLOT.x, SLOT.y, DOCK_Z + 2.15);
+    const CTRL = new THREE.Vector3(2.0, SLOT.y + 0.8, 3.9);
+    const SHOW = new THREE.Vector3(3.1, 1.95, 2.4);
     const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
     const seg = (t, a, b) => Math.min(Math.max((t - a) / (b - a), 0), 1);
     const bez = (a, c, b, k, out) => out.set(
@@ -835,35 +828,35 @@
       (1 - k) * (1 - k) * a.y + 2 * (1 - k) * k * c.y + k * k * b.y,
       (1 - k) * (1 - k) * a.z + 2 * (1 - k) * k * c.z + k * k * b.z
     );
-    // Shown standing up: big face toward the viewer, cable end on top
-    const SHOW_RX = Math.PI / 2 - 0.16, SHOW_SCALE = 1.3;
+    // Shown standing up: cable side facing the viewer, cable end on top
+    const SHOW_RX = Math.PI / 2 - 0.14, SHOW_RZ = 0, SHOW_SCALE = 1.2;
 
     // yaw = current turn of the station; the bank turns to face the viewer
     function pose(t, yaw) {
       const SHOW_RY = -yaw;
-      let ry = 0, rx = 0, cord = 0, sc = 1;
+      let ry = 0, rx = 0, rz = 0, cord = 0, sc = 1;
       const pos = bank.position;
       if (t < 1.0) pos.copy(SLOT);
       else if (t < 1.9) pos.lerpVectors(SLOT, PULLED, ease(seg(t, 1.0, 1.9)));
       else if (t < 3.1) {
         const k = ease(seg(t, 1.9, 3.1));
         bez(PULLED, CTRL, SHOW, k, pos);
-        ry = SHOW_RY * k; rx = SHOW_RX * k; sc = 1 + (SHOW_SCALE - 1) * k;
+        ry = SHOW_RY * k; rx = SHOW_RX * k; rz = SHOW_RZ * k; sc = 1 + (SHOW_SCALE - 1) * k;
       } else if (t < 8.0) {
         const hold = seg(t, 3.1, 8.0);
         const env = Math.sin(Math.PI * hold);
         pos.copy(SHOW);
         pos.y += Math.sin((t - 3.1) * 1.6) * 0.05 * env;
         ry = SHOW_RY + Math.sin((t - 3.1) * 1.1) * 0.3 * env;
-        rx = SHOW_RX; sc = SHOW_SCALE;
+        rx = SHOW_RX; rz = SHOW_RZ; sc = SHOW_SCALE;
         cord = t < 4.0 ? ease(seg(t, 3.1, 4.0)) : t < 7.2 ? 1 : 1 - ease(seg(t, 7.2, 8.0));
       } else if (t < 9.2) {
         const k = ease(seg(t, 8.0, 9.2));
         bez(SHOW, CTRL, PULLED, k, pos);
-        ry = SHOW_RY * (1 - k); rx = SHOW_RX * (1 - k); sc = 1 + (SHOW_SCALE - 1) * (1 - k);
+        ry = SHOW_RY * (1 - k); rx = SHOW_RX * (1 - k); rz = SHOW_RZ * (1 - k); sc = 1 + (SHOW_SCALE - 1) * (1 - k);
       } else if (t < 10.0) pos.lerpVectors(PULLED, SLOT, ease(seg(t, 9.2, 10.0)));
       else pos.copy(SLOT);
-      bank.rotation.set(rx, ry, 0);
+      bank.rotation.set(rx, ry, rz);
       bank.scale.setScalar(sc);
       setCords(cord);
       return cord;
@@ -894,36 +887,23 @@
       station.position.set(-0.95, FLOOR_Y, 0);
     }
 
-    const rects = [];
+    // Labels sit beside the side cables and just above the middle one
     function placeLabels(cord) {
       const show = cord > 0.97;
-      bank.localToWorld(tmp2.set(0, 0, -0.3)).project(camera);
-      const bx = (tmp2.x * 0.5 + 0.5) * w, by = (-tmp2.y * 0.5 + 0.5) * h;
+      labels.forEach((el) => el.classList.toggle('show', show));
+      if (!show) return;
       cords.forEach((c, i) => {
         const el = labels[i];
-        el.classList.toggle('show', show);
-        if (!show) return;
-        c.plug.localToWorld(tmp.set(0, 0.3, 0)).project(camera);
-        let x = (tmp.x * 0.5 + 0.5) * w, y = (-tmp.y * 0.5 + 0.5) * h;
-        let dx = x - bx, dy = y - by;
-        const len = Math.hypot(dx, dy) || 1;
-        x += (dx / len) * 30; y += (dy / len) * 22;
+        c.end.getWorldPosition(tmp).project(camera);
+        const tx = (tmp.x * 0.5 + 0.5) * w, ty = (-tmp.y * 0.5 + 0.5) * h;
         const lw = el.offsetWidth, lh = el.offsetHeight;
-        x = Math.min(Math.max(x - lw / 2, 4), w - lw - 4);
-        y = Math.min(Math.max(y - lh / 2, 4), h - lh - 4);
-        rects[i] = { x, y, w: lw, h: lh };
+        let x, y;
+        if (c.fan === 0) { x = tx - lw / 2; y = ty - lh - 10; }
+        else { x = c.fan < 0 ? tx - lw - 10 : tx + 10; y = ty - lh / 2; }
+        x = Math.min(Math.max(x, 4), w - lw - 4);
+        y = Math.min(Math.max(y, 4), h - lh - 4);
+        el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
       });
-      if (!show) return;
-      // nudge apart any labels that overlap
-      for (let i = 1; i < rects.length; i++) {
-        for (let j = 0; j < i; j++) {
-          const a = rects[j], b = rects[i];
-          if (a.x < b.x + b.w + 6 && b.x < a.x + a.w + 6 && a.y < b.y + b.h + 4 && b.y < a.y + a.h + 4) {
-            b.y = a.y + a.h + 6;
-          }
-        }
-      }
-      rects.forEach((r, i) => { labels[i].style.transform = 'translate(' + r.x.toFixed(1) + 'px,' + r.y.toFixed(1) + 'px)'; });
     }
 
     const clock = new THREE.Clock();
@@ -1041,21 +1021,39 @@
     g.beginPath(); g.moveTo(946, 162); g.lineTo(964, 178); g.lineTo(946, 194); g.stroke();
     return makeTex(c);
   }
-  function bankTopTexture() {
-    const c = document.createElement('canvas'); c.width = 256; c.height = 406;
+  // Cable side of the power bank (texture top = the cable end)
+  function bankBackTexture() {
+    const c = document.createElement('canvas'); c.width = 300; c.height = 640;
     const g = c.getContext('2d');
-    // battery level lights near the front end (bottom of the texture)
-    for (let i = 0; i < 4; i++) {
-      g.shadowColor = 'rgba(52,199,89,0.9)'; g.shadowBlur = 10;
-      g.fillStyle = '#34C759';
-      g.beginPath(); g.roundRect ? g.roundRect(66 + i * 34, 340, 22, 10, 5) : g.rect(66 + i * 34, 340, 22, 10); g.fill();
-    }
-    g.shadowBlur = 0;
-    drawClover(g, 128, 170, 110, '#34C759');
-    g.fillStyle = '#8A8F98';
-    g.font = '600 24px -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif';
+    // cable bay
+    g.fillStyle = 'rgba(40,38,44,0.55)';
+    g.beginPath(); g.roundRect ? g.roundRect(34, 8, 232, 232, 18) : g.rect(34, 8, 232, 232); g.fill();
+    g.strokeStyle = 'rgba(233,230,236,0.25)'; g.lineWidth = 3;
+    g.beginPath(); g.roundRect ? g.roundRect(34, 8, 232, 232, 18) : g.rect(34, 8, 232, 232); g.stroke();
+    g.fillStyle = '#E9E6EC';
     g.textAlign = 'center';
-    g.fillText('Clover Vending', 128, 270);
+    g.font = '700 22px -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif';
+    g.fillText('22.5W  8000mAh', 150, 292);
+    g.fillStyle = 'rgba(233,230,236,0.45)';
+    for (let i = 0; i < 6; i++) g.fillRect(42, 318 + i * 14, i % 2 ? 150 : 216, 5);
+    g.fillStyle = '#E9E6EC';
+    drawClover(g, 150, 480, 52, '#34C759');
+    g.font = '700 34px -apple-system, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif';
+    g.fillText('Clover Vending', 150, 552);
+    return makeTex(c);
+  }
+  function bankFrontTexture() {
+    const c = document.createElement('canvas'); c.width = 300; c.height = 640;
+    const g = c.getContext('2d');
+    g.fillStyle = '#E9E6EC';
+    g.textAlign = 'center';
+    drawClover(g, 150, 200, 64, '#34C759');
+    g.font = '700 34px -apple-system, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif';
+    g.fillText('Clover Vending', 150, 282);
+    // "this end in first" arrows at the cable end
+    [70, 230].forEach((x) => {
+      g.beginPath(); g.moveTo(x - 16, 576); g.lineTo(x + 16, 576); g.lineTo(x, 598); g.closePath(); g.fill();
+    });
     return makeTex(c);
   }
   function radialTexture(color) {
