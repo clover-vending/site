@@ -6,7 +6,7 @@
 <title>Clover Vending | Phone charging stations in Clarksville, TN</title>
 <meta name="description" content="Tap-to-pay phone charging stations for bars and restaurants in Clarksville, Tennessee. Free to the venue.">
 <meta name="theme-color" content="#2A1530">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-26 -26 52 52'%3E%3Cpath d='M0 2C0.3 10 1.6 17 5.5 23' fill='none' stroke='%2334C759' stroke-width='3' stroke-linecap='round'/%3E%3Cg fill='%2334C759'%3E%3Cpath id='l' transform='rotate(45)' d='M0 -1.5C-3 -5 -11 -8.5 -11.6 -15.2C-12.1 -20.8 -6.8 -24.2 -3.6 -22.6C-1.8 -21.7 -0.6 -20.2 0 -18.4C0.6 -20.2 1.8 -21.7 3.6 -22.6C6.8 -24.2 12.1 -20.8 11.6 -15.2C11 -8.5 3 -5 0 -1.5Z'/%3E%3Cuse href='%23l' transform='rotate(90)'/%3E%3Cuse href='%23l' transform='rotate(180)'/%3E%3Cuse href='%23l' transform='rotate(270)'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-26 -26 52 52'%3E%3Cg fill='%2334C759'%3E%3Cg transform='translate(0 -3) scale(.88)'%3E%3Cpath id='l' transform='rotate(45)' d='M0 -1.5C-3 -5 -11 -8.5 -11.6 -15.2C-12.1 -20.8 -6.8 -24.2 -3.6 -22.6C-1.8 -21.7 -0.6 -20.2 0 -18.4C0.6 -20.2 1.8 -21.7 3.6 -22.6C6.8 -24.2 12.1 -20.8 11.6 -15.2C11 -8.5 3 -5 0 -1.5Z'/%3E%3Cuse href='%23l' transform='rotate(90)'/%3E%3Cuse href='%23l' transform='rotate(180)'/%3E%3Cuse href='%23l' transform='rotate(270)'/%3E%3C/g%3E%3Cpath d='M-1.8 -3C-1.7 7 0.2 16 5.2 23.8C6 25 8.2 23.8 7.5 22.6C3.2 15.6 1.9 7 1.8 -3Z'/%3E%3C/g%3E%3C/svg%3E">
 <style>
   :root {
     --bg: #2A1530;
@@ -169,10 +169,119 @@
     .contact-card { padding: 56px 40px; }
   }
 
+  /* ---------- 3D station ---------- */
+  .stage {
+    position: relative; height: 360px; margin-top: 24px; margin-bottom: -40px;
+    display: grid; place-items: center;
+    perspective: 1000px; perspective-origin: 50% 35%;
+    touch-action: pan-y;
+  }
+  .floor {
+    position: absolute; left: 50%; bottom: 22px; width: 300px; height: 70px;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, rgba(52,199,89,.28) 0%, rgba(52,199,89,.08) 40%, rgba(52,199,89,0) 70%);
+    filter: blur(4px);
+  }
+  .station {
+    --w: 170px; --h: 250px; --d: 96px;
+    position: relative; width: var(--w); height: var(--h);
+    transform-style: preserve-3d;
+    transform: rotateX(-14deg) rotateY(-30deg);
+    will-change: transform;
+  }
+  .face { position: absolute; left: 0; top: 0; backface-visibility: hidden; }
+  .front {
+    width: var(--w); height: var(--h); border-radius: 6px;
+    transform: translateZ(calc(var(--d) / 2));
+    background: linear-gradient(165deg, #452750 0%, #2C1633 55%, #1F0E25 100%);
+    box-shadow: inset 0 0 0 1px rgba(243,238,245,.07);
+  }
+  .back  { width: var(--w); height: var(--h); border-radius: 6px; background: #1A0B1F; transform: rotateY(180deg) translateZ(calc(var(--d) / 2)); }
+  .right, .left { width: var(--d); height: var(--h); left: calc((var(--w) - var(--d)) / 2); }
+  .right { background: linear-gradient(90deg, #2A1531, #170A1C); transform: rotateY(90deg) translateZ(calc(var(--w) / 2)); }
+  .left  { background: linear-gradient(90deg, #22102A, #3A1F42); transform: rotateY(-90deg) translateZ(calc(var(--w) / 2)); }
+  .top, .bottom { width: var(--w); height: var(--d); top: calc((var(--h) - var(--d)) / 2); }
+  .top    { background: linear-gradient(180deg, #4B2B56, #3A1F43); transform: rotateX(90deg) translateZ(calc(var(--h) / 2)); }
+  .bottom { background: #12071A; transform: rotateX(-90deg) translateZ(calc(var(--h) / 2)); }
+
+  .screen {
+    position: absolute; left: 14px; right: 14px; top: 14px; height: 78px;
+    border-radius: 8px; background: #0E0612;
+    box-shadow: inset 0 0 0 1px rgba(52,199,89,.25), 0 0 18px rgba(52,199,89,.12);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  }
+  .screen svg { width: 30px; height: 30px; }
+  .screen span { font-size: 10px; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; color: var(--green); }
+  .tap { position: absolute; left: 0; right: 0; top: 102px; display: grid; place-items: center; }
+  .tap svg { width: 30px; height: 30px; fill: none; stroke: var(--muted); stroke-width: 1.7; stroke-linecap: round; opacity: .8; }
+  .slots {
+    position: absolute; left: 14px; right: 14px; bottom: 14px; height: 92px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  }
+  .slot {
+    position: relative; border-radius: 5px; background: #0B0410;
+    box-shadow: inset 0 3px 6px rgba(0,0,0,.6);
+    overflow: hidden;
+  }
+  .slot i {
+    position: absolute; left: 3px; right: 3px; top: 4px; bottom: 3px; border-radius: 4px;
+    background: linear-gradient(180deg, #F3EEF5, #CBBFD1);
+  }
+  .slot i::after {
+    content: ""; position: absolute; left: 50%; top: 8px; width: 12px; height: 3px; margin-left: -6px;
+    border-radius: 2px; background: var(--green); box-shadow: 0 0 6px var(--green);
+  }
+
+  /* The power bank that slides out of slot 3 */
+  .bank {
+    --bw: 28px; --bh: 76px; --bd: 14px;
+    position: absolute; width: var(--bw); height: var(--bh);
+    left: 90px; top: 162px;
+    transform-style: preserve-3d;
+    transform: translate3d(0, 0, 42px);
+    animation: grab 6.5s cubic-bezier(.45,0,.25,1) infinite;
+  }
+  .b-face { position: absolute; left: 0; top: 0; }
+  .b-front, .b-back { width: var(--bw); height: var(--bh); border-radius: 4px; }
+  .b-front {
+    transform: translateZ(calc(var(--bd) / 2));
+    background: linear-gradient(180deg, #F7F3F9, #D3C8D8);
+    display: flex; flex-direction: column; align-items: center; padding-top: 8px; gap: 10px;
+  }
+  .b-front .led { width: 12px; height: 3px; border-radius: 2px; background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .b-front svg { width: 16px; height: 16px; }
+  .b-back { background: #BFB2C5; transform: rotateY(180deg) translateZ(calc(var(--bd) / 2)); }
+  .b-right, .b-left { width: var(--bd); height: var(--bh); left: calc((var(--bw) - var(--bd)) / 2); background: #B5A8BB; }
+  .b-right { transform: rotateY(90deg) translateZ(calc(var(--bw) / 2)); }
+  .b-left  { transform: rotateY(-90deg) translateZ(calc(var(--bw) / 2)); background: #E2D9E6; }
+  .b-top, .b-bottom { width: var(--bw); height: var(--bd); top: calc((var(--bh) - var(--bd)) / 2); }
+  .b-top    { background: #FFFFFF; transform: rotateX(90deg) translateZ(calc(var(--bh) / 2)); }
+  .b-bottom { background: #A99CAF; transform: rotateX(-90deg) translateZ(calc(var(--bh) / 2)); }
+  @keyframes grab {
+    0%, 18%   { transform: translate3d(0, 0, 42px) rotateY(0) rotateX(0); }
+    40%, 62%  { transform: translate3d(20px, -84px, 150px) rotateY(-28deg) rotateX(10deg); }
+    84%, 100% { transform: translate3d(0, 0, 42px) rotateY(0) rotateX(0); }
+  }
+
+  /* Scroll reveal (only when JS is running) */
+  .js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+  .js .reveal.in { opacity: 1; transform: none; }
+
+  @media (min-width: 900px) {
+    .hero { text-align: left; }
+    .hero-grid { display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; gap: 32px; }
+    .hero-logo { margin: 0 0 24px; width: 96px; height: 96px; }
+    .hero .tagline, .hero .sub { margin-left: 0; }
+    .hero-actions { justify-content: flex-start; }
+    .stage { margin-top: 0; height: 460px; }
+    .station { scale: 1.2; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-    .pulse { animation: none; }
+    .pulse, .bank { animation: none; }
     .batt-fill, .btn { transition: none; }
+    .js .reveal { opacity: 1; transform: none; transition: none; }
   }
 </style>
 </head>
@@ -184,19 +293,21 @@
     <!-- One heart-shaped leaflet: narrow at the center, two soft lobes and a notch at the tip -->
     <path id="leaf" d="M0 -1.5C-3 -5 -11 -8.5 -11.6 -15.2C-12.1 -20.8 -6.8 -24.2 -3.6 -22.6C-1.8 -21.7 -0.6 -20.2 0 -18.4C0.6 -20.2 1.8 -21.7 3.6 -22.6C6.8 -24.2 12.1 -20.8 11.6 -15.2C11 -8.5 3 -5 0 -1.5Z"/>
     <symbol id="clover" viewBox="-26 -26 52 52">
-      <path d="M0 2C0.3 10 1.6 17 5.5 23" fill="none" stroke="#34C759" stroke-width="2.6" stroke-linecap="round"/>
-      <g fill="#34C759">
-        <use href="#leaf" transform="rotate(45)"/>
-        <use href="#leaf" transform="rotate(135)"/>
-        <use href="#leaf" transform="rotate(225)"/>
-        <use href="#leaf" transform="rotate(315)"/>
+      <g transform="translate(0 -3) scale(.88)">
+        <g fill="#34C759">
+          <use href="#leaf" transform="rotate(45)"/>
+          <use href="#leaf" transform="rotate(135)"/>
+          <use href="#leaf" transform="rotate(225)"/>
+          <use href="#leaf" transform="rotate(315)"/>
+        </g>
+        <g stroke="#2A1530" stroke-width="0.9" stroke-linecap="round" opacity="0.35">
+          <path d="M0 -4V-17" transform="rotate(45)"/>
+          <path d="M0 -4V-17" transform="rotate(135)"/>
+          <path d="M0 -4V-17" transform="rotate(225)"/>
+          <path d="M0 -4V-17" transform="rotate(315)"/>
+        </g>
       </g>
-      <g stroke="#2A1530" stroke-width="0.9" stroke-linecap="round" opacity="0.35">
-        <path d="M0 -3V-17" transform="rotate(45)"/>
-        <path d="M0 -3V-17" transform="rotate(135)"/>
-        <path d="M0 -3V-17" transform="rotate(225)"/>
-        <path d="M0 -3V-17" transform="rotate(315)"/>
-      </g>
+      <path fill="#34C759" d="M-1.3 -3C-1.2 7 0.6 16 5.6 23.6C6.2 24.4 7.6 23.6 7.1 22.8C2.8 15.6 1.4 7 1.3 -3Z"/>
     </symbol>
   </defs>
 </svg>
@@ -217,14 +328,52 @@
 <main id="top">
 
   <section class="hero">
-    <div class="wrap">
-      <svg class="hero-logo pulse" role="img" aria-label="Clover Vending logo"><use href="#clover"/></svg>
-      <h1>Clover Vending</h1>
-      <p class="tagline">Nobody leaves with a dead phone.</p>
-      <p class="sub">Tap-to-pay phone charging stations for bars and restaurants in Clarksville, Tennessee.</p>
-      <div class="hero-actions">
-        <a class="btn" href="#contact">Get a station</a>
-        <a class="btn btn-ghost" href="#how">How it works</a>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <svg class="hero-logo pulse" role="img" aria-label="Clover Vending logo"><use href="#clover"/></svg>
+        <h1>Clover Vending</h1>
+        <p class="tagline">Nobody leaves with a dead phone.</p>
+        <p class="sub">Tap-to-pay phone charging stations for bars and restaurants in Clarksville, Tennessee.</p>
+        <div class="hero-actions">
+          <a class="btn" href="#contact">Get a station</a>
+          <a class="btn btn-ghost" href="#how">How it works</a>
+        </div>
+      </div>
+
+      <!-- 3D charging station, built from CSS 3D faces -->
+      <div class="stage" id="stage" aria-hidden="true">
+        <div class="floor"></div>
+        <div class="station" id="station">
+          <div class="face front">
+            <div class="screen">
+              <svg class="pulse"><use href="#clover"/></svg>
+              <span>Tap to charge</span>
+            </div>
+            <div class="tap">
+              <svg viewBox="0 0 24 24"><path d="M8.5 8.5a5 5 0 0 1 0 7"/><path d="M11.5 6a8.5 8.5 0 0 1 0 12"/><path d="M14.5 3.5a12 12 0 0 1 0 17"/></svg>
+            </div>
+            <div class="slots">
+              <div class="slot"><i></i></div>
+              <div class="slot"><i></i></div>
+              <div class="slot empty"></div>
+              <div class="slot"><i></i></div>
+            </div>
+          </div>
+          <div class="face back"></div>
+          <div class="face right"></div>
+          <div class="face left"></div>
+          <div class="face top"></div>
+          <div class="face bottom"></div>
+
+          <div class="bank">
+            <div class="b-face b-front"><span class="led"></span><svg><use href="#clover"/></svg></div>
+            <div class="b-face b-back"></div>
+            <div class="b-face b-right"></div>
+            <div class="b-face b-left"></div>
+            <div class="b-face b-top"></div>
+            <div class="b-face b-bottom"></div>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -335,13 +484,13 @@
         <h2>Get a station</h2>
         <p class="lede" style="margin-left:auto;margin-right:auto">Tell us about your venue. We'll come by, take a look, and answer your questions.</p>
         <div class="contact-lines">
-          <a class="contact-line" href="mailto:EMAIL_HERE">
+          <a class="contact-line" href="mailto:coby.a.smi@gmail.com">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg>
-            EMAIL_HERE
+            coby.a.smi@gmail.com
           </a>
-          <a class="contact-line" href="tel:PHONE_HERE">
+          <a class="contact-line" href="tel:+19313399134">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
-            PHONE_HERE
+            (931) 339-9134
           </a>
         </div>
         <p class="local">
@@ -382,6 +531,63 @@
     update();
 
     document.getElementById('year').textContent = new Date().getFullYear();
+  })();
+
+  // 3D station: gentle sway, follows the pointer, turns as you scroll
+  (function () {
+    var station = document.getElementById('station');
+    var stage = document.getElementById('stage');
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!station || reduce) return;
+
+    var tx = 0, ty = 0, cx = 0, cy = 0, visible = true, running = false;
+
+    function onMove(x, y) {
+      tx = (x / window.innerWidth - 0.5) * 36;
+      ty = (y / window.innerHeight - 0.5) * -14;
+    }
+    window.addEventListener('pointermove', function (e) { onMove(e.clientX, e.clientY); }, { passive: true });
+    stage.addEventListener('touchmove', function (e) {
+      var t = e.touches[0]; if (t) onMove(t.clientX, t.clientY);
+    }, { passive: true });
+
+    function frame(now) {
+      if (!visible) { running = false; return; }
+      var t = now / 1000;
+      cx += (tx - cx) * 0.06;
+      cy += (ty - cy) * 0.06;
+      var scroll = Math.min(window.scrollY, 700) * 0.09;
+      var ry = -30 + Math.sin(t * 0.6) * 9 + cx + scroll;
+      var rx = -14 + Math.sin(t * 0.45) * 2 + cy;
+      station.style.transform = 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)';
+      requestAnimationFrame(frame);
+    }
+    function start() { if (!running) { running = true; requestAnimationFrame(frame); } }
+
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (entries) {
+        visible = entries[0].isIntersecting;
+        if (visible) start();
+      }).observe(stage);
+    }
+    start();
+  })();
+
+  // Fade cards in as they scroll into view
+  (function () {
+    if (!('IntersectionObserver' in window)) return;
+    document.documentElement.classList.add('js');
+    var items = document.querySelectorAll('.card, details, section h2, .lede');
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px' });
+    items.forEach(function (el, i) {
+      el.classList.add('reveal');
+      el.style.transitionDelay = (i % 3) * 70 + 'ms';
+      io.observe(el);
+    });
   })();
 </script>
 </body>
