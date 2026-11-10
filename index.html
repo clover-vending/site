@@ -142,8 +142,14 @@
 
   /* 3D station */
   .stage-wrap { margin-top: 28px; }
-  .stage { position: relative; height: 390px; touch-action: pan-y; }
-  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .stage { position: relative; height: 440px; touch-action: pan-y; }
+  .stage canvas {
+    position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, transparent, #000 8%, #000 92%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, transparent, #000 8%, #000 92%, transparent);
+    mask-composite: intersect;
+  }
   .stage-loading {
     position: absolute; inset: 0; display: grid; place-items: center;
     color: var(--muted); font-size: .85rem;
@@ -246,7 +252,7 @@
     .hero .tagline, .hero .sub { margin-left: 0; }
     .hero-actions { justify-content: flex-start; }
     .stage-wrap { margin-top: 0; }
-    .stage { height: 540px; }
+    .stage { height: 580px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -524,12 +530,17 @@
   import * as THREE from 'three';
   import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
   import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+  import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+  import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+  import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+  import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
   const wrap = document.getElementById('stageWrap');
   const stage = document.getElementById('stage');
   const canvas = document.getElementById('scene');
   const labels = Array.from(stage.querySelectorAll('.cord-label'));
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FONT = '-apple-system, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif';
 
   try {
     init();
@@ -539,70 +550,61 @@
   }
 
   function init() {
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    // ---------- Renderer, scene, post-processing ----------
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 0.95;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.VSMShadowMap;
 
     const scene = new THREE.Scene();
     const pmrem = new THREE.PMREMGenerator(renderer);
-    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.03).texture;
 
-    const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 100);
 
-    // Lights: soft key from above-right, plum rim from behind-left
-    const key = new THREE.DirectionalLight(0xffffff, 1.5);
-    key.position.set(2.5, 10, 7);
-    key.castShadow = true;
-    key.shadow.mapSize.set(2048, 2048);
-    Object.assign(key.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6, near: 1, far: 30 });
-    key.shadow.bias = -0.0004;
-    key.shadow.radius = 16;
-    key.shadow.blurSamples = 24;
-    key.shadow.normalBias = 0.02;
+    // Studio lighting: soft key, cool fill, plum rim to separate the white body from the background
+    const key = new THREE.DirectionalLight(0xFFFFFF, 0.85);
+    key.position.set(4, 8, 7);
     scene.add(key);
-    const rim = new THREE.DirectionalLight(0xC89BE0, 0.9);
-    rim.position.set(-7, 4, -5);
+    const rim = new THREE.DirectionalLight(0xC9A0E8, 1.6);
+    rim.position.set(-6, 5, -7);
     scene.add(rim);
-    scene.add(new THREE.HemisphereLight(0xF3EEF5, 0x2A1530, 0.35));
+    const rim2 = new THREE.DirectionalLight(0xB58ADA, 1.2);
+    rim2.position.set(7, 3, -5);
+    scene.add(rim2);
+    scene.add(new THREE.HemisphereLight(0xFFFFFF, 0x2A1530, 0.35));
 
-    const FLOOR_Y = -2.6;
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ color: 0x0E0412, opacity: 0.45 }));
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = FLOOR_Y;
-    ground.receiveShadow = true;
-    scene.add(ground);
-
-    // Faint green glow on the counter under the station
-    const glow = new THREE.Mesh(
-      new THREE.PlaneGeometry(10, 6),
-      new THREE.MeshBasicMaterial({ map: radialTexture('rgba(52,199,89,0.55)'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.3 })
-    );
-    glow.rotation.x = -Math.PI / 2;
-    glow.position.y = 0.004;
+    const composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.3, 1.45);
+    // Add the glow as light without overwriting transparency, so it falls softly onto the page behind
+    Object.assign(bloom.blendMaterial, {
+      blending: THREE.CustomBlending, blendEquation: THREE.AddEquation,
+      blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor,
+      blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor,
+    });
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
 
     // ---------- Materials ----------
-    const shell = new THREE.MeshPhysicalMaterial({ color: 0xF7F7F9, roughness: 0.3, clearcoat: 0.85, clearcoatRoughness: 0.2 });
-    const trim = new THREE.MeshPhysicalMaterial({ color: 0xD3D6DB, roughness: 0.4, clearcoat: 0.4 });
-    const armMat = new THREE.MeshPhysicalMaterial({ color: 0xC5C8CE, roughness: 0.35, metalness: 0.25, clearcoat: 0.5 });
-    const recess = new THREE.MeshStandardMaterial({ color: 0x1A171D, roughness: 0.75 });
-    const glassBlack = new THREE.MeshPhysicalMaterial({ color: 0x060408, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.04 });
-    const blackPlastic = new THREE.MeshPhysicalMaterial({ color: 0x111014, roughness: 0.35, clearcoat: 0.6 });
-    const bankShell = new THREE.MeshPhysicalMaterial({ color: 0x7E7F84, roughness: 0.55, clearcoat: 0.25, clearcoatRoughness: 0.5 });
-    const ribbonMat = new THREE.MeshStandardMaterial({ color: 0xEC6A1E, roughness: 0.5 });
-    const greenLight = new THREE.MeshBasicMaterial({ color: 0x3BDB63, toneMapped: false });
-    const cableMat = new THREE.MeshStandardMaterial({ color: 0x2D2632, roughness: 0.55 });
-    const metal = new THREE.MeshStandardMaterial({ color: 0xD4D7DD, metalness: 1, roughness: 0.22 });
-    const gold = new THREE.MeshStandardMaterial({ color: 0xE3C27A, metalness: 1, roughness: 0.3 });
+    const shell = new THREE.MeshPhysicalMaterial({ color: 0xF2F2F4, roughness: 0.4, clearcoat: 0.55, clearcoatRoughness: 0.28 });
+    const rimMat = new THREE.MeshPhysicalMaterial({ color: 0xE6E7EA, roughness: 0.28, clearcoat: 0.8, clearcoatRoughness: 0.15 });
+    const inner = new THREE.MeshStandardMaterial({ color: 0x0E0C10, roughness: 0.9 });
+    const armMat = new THREE.MeshPhysicalMaterial({ color: 0xBFC2C8, roughness: 0.3, metalness: 0.35, clearcoat: 0.6 });
+    const glassBlack = new THREE.MeshPhysicalMaterial({ color: 0x050407, roughness: 0.05, clearcoat: 1, clearcoatRoughness: 0.03 });
+    const blackPlastic = new THREE.MeshPhysicalMaterial({ color: 0x121115, roughness: 0.32, clearcoat: 0.7 });
+    const bankShell = new THREE.MeshPhysicalMaterial({ color: 0x84858B, roughness: 0.62, clearcoat: 0.2, clearcoatRoughness: 0.6 });
+    const ribbonMat = new THREE.MeshPhysicalMaterial({ color: 0xF0691C, roughness: 0.45, clearcoat: 0.3 });
+    const metal = new THREE.MeshStandardMaterial({ color: 0xDCDEE3, metalness: 1, roughness: 0.18 });
+    const gold = new THREE.MeshStandardMaterial({ color: 0xE6C47C, metalness: 1, roughness: 0.25 });
+    // HDR green so it blooms like a real LED strip
+    const ledGreen = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.04, 2.7, 0.27) });
 
-    const shadowed = (m) => { m.castShadow = true; return m; };
-
-    // Rounded rectangle outline (w x d, corner radius r)
-    function roundedRect(w, d, r) {
-      const s = new THREE.Shape(), x = -w / 2, y = -d / 2, P = Math.PI;
+    // ---------- Shape helpers ----------
+    function roundedRect(w, d, r, path) {
+      const s = path || new THREE.Shape(), x = -w / 2, y = -d / 2, P = Math.PI;
       s.moveTo(x + r, y);
       s.lineTo(x + w - r, y); s.absarc(x + w - r, y + r, r, -P / 2, 0);
       s.lineTo(x + w, y + d - r); s.absarc(x + w - r, y + d - r, r, 0, P / 2);
@@ -610,138 +612,148 @@
       s.lineTo(x, y + r); s.absarc(x + r, y + r, r, P, P * 1.5);
       return s;
     }
-    // Vertical block with big rounded corners and softly beveled top/bottom edges, from y=0 to y=h
+    // Vertical block, big rounded corners, soft bevel on top/bottom edges, from y=0 to y=h
     function prism(w, d, r, h, bevel) {
       const g = new THREE.ExtrudeGeometry(roundedRect(w, d, r), {
         depth: Math.max(h - 2 * bevel, 0.001), bevelEnabled: bevel > 0,
-        bevelThickness: bevel, bevelSize: bevel, bevelSegments: 5, curveSegments: 28,
+        bevelThickness: bevel, bevelSize: bevel, bevelSegments: 6, curveSegments: 32,
       });
       g.rotateX(-Math.PI / 2);
       g.translate(0, bevel, 0);
       return g;
     }
-    // Flat pill shape facing +z
-    function pill(w, h, depth) {
-      const g = new THREE.ExtrudeGeometry(roundedRect(w, h, h / 2 - 0.001), { depth, bevelEnabled: false, curveSegments: 20 });
-      return g;
+    // Pill facing +z
+    function pillGeo(w, h, depth, bevel) {
+      return new THREE.ExtrudeGeometry(roundedRect(w, h, h / 2 - 0.001), {
+        depth, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 4, curveSegments: 24,
+      });
     }
+    // Pill ring (slot rim) facing +z
+    function pillRingGeo(w, h, iw, ih, depth, bevel) {
+      const s = roundedRect(w, h, h / 2 - 0.001);
+      s.holes.push(roundedRect(iw, ih, ih / 2 - 0.001, new THREE.Path()));
+      return new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 4, curveSegments: 24 });
+    }
+    const mesh = (geo, mat) => new THREE.Mesh(geo, mat);
 
-    // ---------- Station (three stacked white sections with green light lines) ----------
+    // ---------- Soft contact shadow + faint green glow on the counter ----------
+    const FLOOR_Y = -2.7;
+    const shadowTex = radialTexture('rgba(8,2,12,1)', 'rgba(8,2,12,0)');
+    const floor = new THREE.Group();
+    floor.position.y = FLOOR_Y;
+    scene.add(floor);
+    [[5.0, 4.6, 0.5], [3.6, 3.3, 0.55]].forEach(([sx, sz, o]) => {
+      const p = mesh(new THREE.PlaneGeometry(sx, sz), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, opacity: o, depthWrite: false }));
+      p.rotation.x = -Math.PI / 2;
+      p.position.y = 0.002;
+      floor.add(p);
+    });
+    const glow = mesh(new THREE.PlaneGeometry(7, 6), new THREE.MeshBasicMaterial({
+      map: radialTexture('rgba(52,199,89,0.5)', 'rgba(52,199,89,0)'), transparent: true, opacity: 0.35,
+      depthWrite: false, blending: THREE.AdditiveBlending,
+    }));
+    glow.rotation.x = -Math.PI / 2;
+    glow.position.y = 0.004;
+
+    // ---------- Station: three stacked sections with green light lines ----------
     const station = new THREE.Group();
+    station.position.y = FLOOR_Y;
     scene.add(station);
-    station.add(glow);
 
-    const W = 2.9, D = 2.7, R = 0.42, BEV = 0.06, LINE = 0.05;
+    const W = 2.9, D = 2.7, R = 0.46, BEV = 0.08, LINE = 0.05;
     const FRONT = D / 2 + BEV;
     const tierHeights = [1.13, 1.2, 1.15];
     const tierY = [];
     let y = 0;
-    const lineGeo = prism(W + 0.105, D + 0.105, R + 0.05, LINE, 0);
+    const lineGeo = prism(W + 0.14, D + 0.14, R + 0.07, LINE, 0);
     tierHeights.forEach((th) => {
-      const line = new THREE.Mesh(lineGeo, greenLight);
+      const line = mesh(lineGeo, ledGreen);
       line.position.y = y;
       station.add(line);
       y += LINE;
       tierY.push(y);
-      const tier = shadowed(new THREE.Mesh(prism(W, D, R, th, BEV), shell));
+      const tier = mesh(prism(W, D, R, th, BEV), shell);
       tier.position.y = y;
       station.add(tier);
       y += th;
     });
     const TOP = y;
+    const CENTER_Y = TOP * 0.62;
 
-    // Front label on the top section (our branding)
+    // Front label (our branding)
     const TOPMID = tierY[2] + tierHeights[2] * 0.5;
-    const plate = shadowed(new THREE.Mesh(new RoundedBoxGeometry(2.15, 0.74, 0.04, 4, 0.03), blackPlastic));
+    const plate = mesh(new RoundedBoxGeometry(2.15, 0.74, 0.04, 4, 0.03), blackPlastic);
     plate.position.set(-0.12, TOPMID, FRONT);
     station.add(plate);
-    const plateArt = new THREE.Mesh(new THREE.PlaneGeometry(2.05, 0.66), new THREE.MeshBasicMaterial({ map: plateTexture(), toneMapped: false }));
+    const plateArt = mesh(new THREE.PlaneGeometry(2.05, 0.66), new THREE.MeshBasicMaterial({ map: plateTexture() }));
     plateArt.position.set(-0.12, TOPMID, FRONT + 0.022);
     station.add(plateArt);
-    const lens = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 12), blackPlastic);
-    lens.position.set(0, TOPMID + 0.47, FRONT - 0.005);
+    const lens = mesh(new THREE.SphereGeometry(0.03, 16, 12), blackPlastic);
+    lens.position.set(0, TOPMID + 0.47, FRONT - 0.01);
     station.add(lens);
 
     // Card slot on the right side
-    const reader = shadowed(new THREE.Mesh(new RoundedBoxGeometry(0.16, 0.34, 0.8, 3, 0.05), blackPlastic));
-    reader.position.set(W / 2 + BEV + 0.03, TOPMID + 0.06, FRONT - 0.62);
+    const reader = mesh(new RoundedBoxGeometry(0.18, 0.36, 0.82, 4, 0.06), blackPlastic);
+    reader.position.set(W / 2 + BEV + 0.035, TOPMID + 0.06, FRONT - 0.64);
     station.add(reader);
-    const slit = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.6), recess);
-    slit.position.set(W / 2 + BEV + 0.115, TOPMID + 0.1, FRONT - 0.62);
+    const slit = mesh(new THREE.BoxGeometry(0.02, 0.035, 0.62), inner);
+    slit.position.set(W / 2 + BEV + 0.125, TOPMID + 0.1, FRONT - 0.64);
     station.add(slit);
 
-    // NFC tap area printed on the top
-    const topArt = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.9), new THREE.MeshBasicMaterial({ map: topTexture(), transparent: true, toneMapped: false }));
+    // NFC tap area on top
+    const topArt = mesh(new THREE.PlaneGeometry(2.4, 0.9), new THREE.MeshBasicMaterial({ map: topTexture(), transparent: true }));
     topArt.rotation.x = -Math.PI / 2;
-    topArt.position.set(0, TOP + 0.003, 0.72);
+    topArt.position.set(0, TOP + 0.003, 0.74);
     station.add(topArt);
 
-    // Tablet screen on a hinged arm
-    const TILT = 0.32;
+    // Tablet on a two-part hinged arm
+    const TILT = 0.3, TW = 2.75, TH = 1.65;
     const tab = new THREE.Group();
-    const TW = 2.75, TH = 1.65;
-    tab.position.set(0, TOP + 0.1 + (TH / 2) * Math.cos(TILT), -0.05 - (TH / 2) * Math.sin(TILT));
+    tab.position.set(0, TOP + 0.12 + (TH / 2) * Math.cos(TILT), -0.08 - (TH / 2) * Math.sin(TILT));
     tab.rotation.x = -TILT;
     station.add(tab);
-    tab.add(shadowed(new THREE.Mesh(new RoundedBoxGeometry(TW, TH, 0.1, 5, 0.09), shell)));
-    const glassFace = new THREE.Mesh(new RoundedBoxGeometry(TW - 0.06, TH - 0.06, 0.02, 4, 0.07), glassBlack);
+    tab.add(mesh(new RoundedBoxGeometry(TW, TH, 0.1, 6, 0.09), shell));
+    const glassFace = mesh(new RoundedBoxGeometry(TW - 0.05, TH - 0.05, 0.02, 4, 0.07), glassBlack);
     glassFace.position.z = 0.045;
     tab.add(glassFace);
-    const screenTex = screenTexture();
-    const screenMat = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false });
-    const display = new THREE.Mesh(new THREE.PlaneGeometry(TW - 0.3, TH - 0.3), screenMat);
+    const screenMat = new THREE.MeshBasicMaterial({ map: screenTexture() });
+    screenMat.color.setScalar(1.5);
+    const display = mesh(new THREE.PlaneGeometry(TW - 0.22, TH - 0.22), screenMat);
     display.position.z = 0.057;
     tab.add(display);
-    const gloss = new THREE.Mesh(new THREE.PlaneGeometry(TW - 0.08, TH - 0.08),
-      new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.03, transparent: true, opacity: 0.16, clearcoat: 1 }));
-    gloss.position.z = 0.059;
+    const gloss = mesh(new THREE.PlaneGeometry(TW - 0.06, TH - 0.06),
+      new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.02, transparent: true, opacity: 0.12, clearcoat: 1 }));
+    gloss.position.z = 0.06;
     tab.add(gloss);
 
-    const mount = shadowed(new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.14, 0.6, 3, 0.05), shell));
-    mount.position.set(0, TOP + 0.07, -0.95);
+    const mount = mesh(new RoundedBoxGeometry(0.95, 0.14, 0.62, 4, 0.06), shell);
+    mount.position.set(0, TOP + 0.07, -0.98);
     station.add(mount);
-    const armA = new THREE.Vector3(0, TOP + 0.12, -0.95);
-    const armB = new THREE.Vector3(0, tab.position.y - 0.1, tab.position.z - 0.12);
-    const armV = armB.clone().sub(armA);
-    const arm = shadowed(new THREE.Mesh(new RoundedBoxGeometry(0.36, armV.length() + 0.12, 0.12, 3, 0.05), armMat));
-    arm.position.copy(armA).add(armB).multiplyScalar(0.5);
-    arm.rotation.x = Math.atan2(armV.z, armV.y);
-    station.add(arm);
-    const hinge = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.46, 20), armMat);
-    hinge.rotation.z = Math.PI / 2;
-    hinge.position.copy(armB);
-    station.add(hinge);
+    const elbow = new THREE.Vector3(0, TOP + 0.95, -1.12);
+    const armBase = new THREE.Vector3(0, TOP + 0.12, -0.98);
+    const armTop = new THREE.Vector3(0, tab.position.y - 0.05, tab.position.z - 0.13);
+    [[armBase, elbow, 0.34], [elbow, armTop, 0.3]].forEach(([a, b, wdt]) => {
+      const v = b.clone().sub(a);
+      const seg = mesh(new RoundedBoxGeometry(wdt, v.length() + 0.12, 0.11, 3, 0.05), armMat);
+      seg.position.copy(a).add(b).multiplyScalar(0.5);
+      seg.rotation.x = Math.atan2(v.z, v.y);
+      station.add(seg);
+    });
+    [elbow, armTop].forEach((p) => {
+      const h = mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.42, 24), armMat);
+      h.rotation.z = Math.PI / 2;
+      h.position.copy(p);
+      station.add(h);
+    });
 
-    // Power bank, modeled on the BST-0155: 147.5 x 69.8 x 14.5 mm, matte gray,
-    // three flat ribbon cables stored in a bay on the back.
+    // ---------- Slots (2 x 2 in the middle and bottom sections) ----------
+    // Power bank, modeled on the BST-0155: 147.5 x 69.8 x 14.5 mm.
     // Local axes: x = width, y = thickness (+y is the cable side), z = length (+z is the end you see in the slot).
     const BW = 0.94, BT = 0.195, BL = 1.99;
-    const bankBodyGeo = prism(BW - 0.14, BL - 0.14, 0.12, BT, 0.07);
-    bankBodyGeo.translate(0, -BT / 2, 0);
-    const bezelGeo = pill(1.08, 0.3, 0.03);
-    const holeGeo = pill(0.98, 0.22, 0.02);
-    const DOCK_Z = FRONT + 0.03 - BL / 2;
-    const backArt = bankBackTexture();
-    const frontArt = bankFrontTexture();
-
-    function makeBank(withCables) {
-      const g = new THREE.Group();
-      g.rotation.order = 'YXZ';
-      g.add(shadowed(new THREE.Mesh(bankBodyGeo, bankShell)));
-      const led = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.03), greenLight);
-      led.position.z = BL / 2 + 0.002;
-      g.add(led);
-      if (!withCables) return g;
-      const back = new THREE.Mesh(new THREE.PlaneGeometry(BW - 0.06, BL - 0.06), new THREE.MeshStandardMaterial({ map: backArt, transparent: true, roughness: 0.6 }));
-      back.rotation.set(-Math.PI / 2, 0, 0);
-      back.position.y = BT / 2 + 0.002;
-      g.add(back);
-      const front = new THREE.Mesh(new THREE.PlaneGeometry(BW - 0.06, BL - 0.06), new THREE.MeshStandardMaterial({ map: frontArt, transparent: true, roughness: 0.6 }));
-      front.rotation.set(Math.PI / 2, 0, 0);
-      front.position.y = -BT / 2 - 0.002;
-      g.add(front);
-      return g;
-    }
+    const ringGeo = pillRingGeo(1.14, 0.36, 0.99, 0.23, 0.012, 0.014);
+    const holeGeo = new THREE.ShapeGeometry(roundedRect(0.99, 0.23, 0.114), 24);
+    const capGeo = pillGeo(0.93, 0.185, 0.03, 0.012);
+    const DOCK_Z = FRONT + 0.005 - BL / 2;
 
     const slots = [];
     [tierY[1], tierY[0]].forEach((ty, t) => {
@@ -752,142 +764,225 @@
     });
     const MOVER = 1; // middle section, top-right slot
     slots.forEach((p, i) => {
-      const bezel = new THREE.Mesh(bezelGeo, trim);
-      bezel.position.set(p.x, p.y, FRONT - 0.012);
-      station.add(bezel);
-      const hole = new THREE.Mesh(holeGeo, recess);
-      hole.position.set(p.x, p.y, FRONT + 0.002);
+      const ring = mesh(ringGeo, rimMat);
+      ring.position.set(p.x, p.y, FRONT - 0.01);
+      station.add(ring);
+      const hole = mesh(holeGeo, inner);
+      hole.position.set(p.x, p.y, FRONT + 0.001);
       station.add(hole);
       if (i !== MOVER) {
-        const b = makeBank(false);
-        b.position.set(p.x, p.y, DOCK_Z);
-        station.add(b);
+        const cap = mesh(capGeo, bankShell);
+        cap.position.set(p.x, p.y, FRONT - 0.03);
+        station.add(cap);
+        const led = mesh(new THREE.PlaneGeometry(0.2, 0.026), ledGreen);
+        led.position.set(p.x, p.y, FRONT + 0.0135);
+        station.add(led);
       }
     });
 
-    const bank = makeBank(true);
+    // ---------- The power bank that comes out ----------
+    const bankBodyGeo = prism(BW - 0.14, BL - 0.14, 0.12, BT, 0.07);
+    bankBodyGeo.translate(0, -BT / 2, 0);
+    const bank = new THREE.Group();
+    bank.rotation.order = 'YXZ';
     station.add(bank);
+    bank.add(mesh(bankBodyGeo, bankShell));
+    const bankLed = mesh(new THREE.PlaneGeometry(0.2, 0.026), ledGreen);
+    bankLed.position.z = BL / 2 + 0.002;
+    bank.add(bankLed);
+    const backArt = mesh(new THREE.PlaneGeometry(BW - 0.06, BL - 0.06), new THREE.MeshStandardMaterial({ map: bankBackTexture(), transparent: true, roughness: 0.6 }));
+    backArt.rotation.set(-Math.PI / 2, 0, 0);
+    backArt.position.y = BT / 2 + 0.002;
+    bank.add(backArt);
+    const frontArt = mesh(new THREE.PlaneGeometry(BW - 0.06, BL - 0.06), new THREE.MeshStandardMaterial({ map: bankFrontTexture(), transparent: true, roughness: 0.6 }));
+    frontArt.rotation.set(Math.PI / 2, 0, 0);
+    frontArt.position.y = -BT / 2 - 0.002;
+    bank.add(frontArt);
 
-    // Ribbon cables: hinged at the bottom end of the bay, lying flat and pointing toward the top end.
-    // Order matches the labels: USB-C, Lightning, Micro-USB. Left to right on the bank: Lightning, USB-C, Micro.
-    const RIB_LEN = 0.6, RIB_W = 0.12;
-    const cordDefs = [
-      { tip: 'c', x: 0, fan: 0 },
-      { tip: 'l', x: -0.165, fan: -1 },
-      { tip: 'm', x: 0.165, fan: 1 },
-    ];
-    const cords = cordDefs.map((def) => {
-      const fanG = new THREE.Group();
-      fanG.position.set(def.x, BT / 2 + 0.008, -BL / 2 + 0.05);
-      const lift = new THREE.Group();
-      fanG.add(lift);
-      const ribbon = shadowed(new THREE.Mesh(new RoundedBoxGeometry(RIB_W, 0.022, RIB_LEN, 2, 0.01), ribbonMat));
-      ribbon.position.z = RIB_LEN / 2;
-      lift.add(ribbon);
-      const boot = shadowed(new THREE.Mesh(new RoundedBoxGeometry(0.145, 0.05, 0.17, 3, 0.02), ribbonMat));
-      boot.position.z = RIB_LEN + 0.07;
-      lift.add(boot);
-      let tip;
-      if (def.tip === 'c') {
-        tip = new THREE.Mesh(new RoundedBoxGeometry(0.09, 0.036, 0.09, 3, 0.016), metal);
-      } else if (def.tip === 'l') {
-        tip = new THREE.Mesh(new RoundedBoxGeometry(0.066, 0.02, 0.1, 2, 0.009), metal);
-        const pins = new THREE.Mesh(new THREE.BoxGeometry(0.044, 0.022, 0.06), gold);
-        pins.position.set(0, 0, RIB_LEN + 0.22);
-        lift.add(pins);
-      } else {
-        tip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.026, 0.07), metal);
+    // ---------- Flexible flat ribbon cables ----------
+    // Each cable is a flat strip rebuilt every frame along a smooth curve: it lies flat in the bay when stored,
+    // then peels up from its root in a soft bend, fans out, sags a little and twists slightly toward the plug.
+    // Label order: USB-C, Lightning, Micro-USB. On the bank, left to right: Lightning, USB-C, Micro.
+    const RIB_LEN = 0.8, RIB_A = 0.058, RIB_B = 0.011, SEGS = 56, RING = 18;
+    const prof = [];
+    for (let j = 0; j < RING; j++) {
+      const t = (j / RING) * Math.PI * 2, c = Math.cos(t), s = Math.sin(t);
+      prof.push([Math.sign(c) * Math.pow(Math.abs(c), 0.32) * RIB_A, Math.sign(s) * Math.pow(Math.abs(s), 0.32) * RIB_B]);
+    }
+    function ribbonGeo() {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((SEGS + 1) * RING * 3), 3));
+      const idx = [];
+      for (let i = 0; i < SEGS; i++) for (let j = 0; j < RING; j++) {
+        const a = i * RING + j, b = i * RING + ((j + 1) % RING), c = (i + 1) * RING + j, d = (i + 1) * RING + ((j + 1) % RING);
+        idx.push(a, b, c, b, d, c);
       }
-      tip.position.z = RIB_LEN + 0.2;
-      lift.add(tip);
+      geo.setIndex(idx);
+      return geo;
+    }
+    function plugHead(type) {
+      const g = new THREE.Group();
+      const boot = mesh(new RoundedBoxGeometry(0.15, 0.05, 0.17, 4, 0.022), ribbonMat);
+      boot.position.z = 0.075;
+      g.add(boot);
+      let tip;
+      if (type === 'c') tip = mesh(new RoundedBoxGeometry(0.09, 0.034, 0.09, 4, 0.016), metal);
+      else if (type === 'l') {
+        tip = mesh(new RoundedBoxGeometry(0.066, 0.02, 0.1, 3, 0.009), metal);
+        const pins = mesh(new THREE.BoxGeometry(0.044, 0.022, 0.06), gold);
+        pins.position.z = 0.215;
+        g.add(pins);
+      } else tip = mesh(new THREE.BoxGeometry(0.08, 0.026, 0.07), metal);
+      tip.position.z = 0.2;
+      g.add(tip);
       const end = new THREE.Object3D();
-      end.position.z = RIB_LEN + 0.26;
-      lift.add(end);
-      bank.add(fanG);
-      return { fanG, lift, end, fan: def.fan };
+      end.position.z = 0.27;
+      g.add(end);
+      return { g, end };
+    }
+    const cords = [
+      { tip: 'c', x: 0, fan: 0, wob: 0.07 },
+      { tip: 'l', x: -0.165, fan: -1, wob: -0.06 },
+      { tip: 'm', x: 0.165, fan: 1, wob: 0.05 },
+    ].map((def) => {
+      const geo = ribbonGeo();
+      const strip = mesh(geo, ribbonMat);
+      strip.frustumCulled = false;
+      bank.add(strip);
+      const head = plugHead(def.tip);
+      bank.add(head.g);
+      return {
+        geo, head: head.g, end: head.end, fan: def.fan, wob: def.wob,
+        root: new THREE.Vector3(def.x, BT / 2 + RIB_B + 0.004, -BL / 2 + 0.05),
+      };
     });
 
-    // p = 0: stored flat in the bay. p = 1: flipped out from the bank and fanned.
-    function setCords(p) {
+    const rP = new THREE.Vector3(), rD = new THREE.Vector3(), rN = new THREE.Vector3(), rW = new THREE.Vector3(), rX = new THREE.Vector3();
+    const rTmp = new THREE.Vector3(), basis = new THREE.Matrix4();
+    function setCords(p, t) {
+      const ds = RIB_LEN / SEGS;
       cords.forEach((c) => {
-        c.lift.rotation.x = -2.75 * p;
-        c.fanG.rotation.y = -c.fan * 0.5 * p;
+        const arr = c.geo.attributes.position.array;
+        rP.copy(c.root);
+        for (let i = 0; i <= SEGS; i++) {
+          const u = i / SEGS;
+          // most of the bend happens near the root, like a real flat cable peeling off
+          const b = Math.min(1, u / 0.45), bend = b * b * (3 - 2 * b);
+          const sway = Math.sin(t * 1.3 + c.fan * 1.7) * 0.05 * p;
+          const phi = p * (2.45 * bend + 0.38 * Math.sin(Math.PI * u)) + sway * u;
+          const psi = p * (-c.fan * 0.62 * u + c.wob * Math.sin(Math.PI * u));
+          const twist = p * c.fan * 0.4 * u * u;
+          rD.set(Math.cos(phi) * Math.sin(psi), Math.sin(phi), Math.cos(phi) * Math.cos(psi));
+          rX.set(Math.cos(psi), 0, -Math.sin(psi));
+          rN.crossVectors(rD, rX).normalize();
+          rW.crossVectors(rN, rD).normalize();
+          if (twist) {
+            const ct = Math.cos(twist), st = Math.sin(twist);
+            rTmp.copy(rW).multiplyScalar(ct).addScaledVector(rN, st);
+            rN.multiplyScalar(ct).addScaledVector(rW, -st);
+            rW.copy(rTmp);
+          }
+          for (let j = 0; j < RING; j++) {
+            const k = (i * RING + j) * 3;
+            arr[k] = rP.x + rW.x * prof[j][0] + rN.x * prof[j][1];
+            arr[k + 1] = rP.y + rW.y * prof[j][0] + rN.y * prof[j][1];
+            arr[k + 2] = rP.z + rW.z * prof[j][0] + rN.z * prof[j][1];
+          }
+          if (i < SEGS) rP.addScaledVector(rD, ds);
+        }
+        c.geo.attributes.position.needsUpdate = true;
+        c.geo.computeVertexNormals();
+        basis.makeBasis(rW, rN, rD);
+        c.head.quaternion.setFromRotationMatrix(basis);
+        c.head.position.copy(rP);
       });
     }
 
-    // ---------- Animation timeline (seconds) ----------
-    const T = 11;
+    // ---------- Timeline (seconds) ----------
+    const T = 12;
     const SLOT = new THREE.Vector3(slots[MOVER].x, slots[MOVER].y, DOCK_Z);
     const PULLED = new THREE.Vector3(SLOT.x, SLOT.y, DOCK_Z + 2.15);
-    const CTRL = new THREE.Vector3(2.0, SLOT.y + 0.8, 3.9);
-    const SHOW = new THREE.Vector3(3.1, 1.95, 2.4);
+    const CTRL = new THREE.Vector3(2.2, SLOT.y + 0.9, 4.0);
+    const SHOW = new THREE.Vector3(3.0, 2.0, 2.6);
+    const SHOW_RX = Math.PI / 2 - 0.12;
     const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const smooth = (t) => t * t * (3 - 2 * t);
     const seg = (t, a, b) => Math.min(Math.max((t - a) / (b - a), 0), 1);
     const bez = (a, c, b, k, out) => out.set(
       (1 - k) * (1 - k) * a.x + 2 * (1 - k) * k * c.x + k * k * b.x,
       (1 - k) * (1 - k) * a.y + 2 * (1 - k) * k * c.y + k * k * b.y,
       (1 - k) * (1 - k) * a.z + 2 * (1 - k) * k * c.z + k * k * b.z
     );
-    // Shown standing up: cable side facing the viewer, cable end on top
-    const SHOW_RX = Math.PI / 2 - 0.14, SHOW_RZ = 0, SHOW_SCALE = 1.2;
 
-    // yaw = current turn of the station; the bank turns to face the viewer
+    // returns { cord, focus } ; yaw = current turn of the station so the bank can face the viewer
     function pose(t, yaw) {
-      const SHOW_RY = -yaw;
-      let ry = 0, rx = 0, rz = 0, cord = 0, sc = 1;
+      let ry = 0, rx = 0, cord = 0;
       const pos = bank.position;
-      if (t < 1.0) pos.copy(SLOT);
-      else if (t < 1.9) pos.lerpVectors(SLOT, PULLED, ease(seg(t, 1.0, 1.9)));
-      else if (t < 3.1) {
-        const k = ease(seg(t, 1.9, 3.1));
+      const face = -yaw;
+      if (t < 1.4) pos.copy(SLOT);
+      else if (t < 2.4) pos.lerpVectors(SLOT, PULLED, ease(seg(t, 1.4, 2.4)));
+      else if (t < 3.7) {
+        const k = ease(seg(t, 2.4, 3.7));
         bez(PULLED, CTRL, SHOW, k, pos);
-        ry = SHOW_RY * k; rx = SHOW_RX * k; rz = SHOW_RZ * k; sc = 1 + (SHOW_SCALE - 1) * k;
-      } else if (t < 8.0) {
-        const hold = seg(t, 3.1, 8.0);
-        const env = Math.sin(Math.PI * hold);
+        ry = face * k; rx = SHOW_RX * k;
+      } else if (t < 8.6) {
+        const env = Math.sin(Math.PI * seg(t, 3.7, 8.6));
         pos.copy(SHOW);
-        pos.y += Math.sin((t - 3.1) * 1.6) * 0.05 * env;
-        ry = SHOW_RY + Math.sin((t - 3.1) * 1.1) * 0.3 * env;
-        rx = SHOW_RX; rz = SHOW_RZ; sc = SHOW_SCALE;
-        cord = t < 4.0 ? ease(seg(t, 3.1, 4.0)) : t < 7.2 ? 1 : 1 - ease(seg(t, 7.2, 8.0));
-      } else if (t < 9.2) {
-        const k = ease(seg(t, 8.0, 9.2));
+        pos.y += Math.sin((t - 3.7) * 1.5) * 0.04 * env;
+        ry = face + Math.sin((t - 3.7) * 0.9) * 0.3 * env;
+        rx = SHOW_RX;
+        cord = t < 4.6 ? ease(seg(t, 3.7, 4.6)) : t < 7.8 ? 1 : 1 - ease(seg(t, 7.8, 8.6));
+      } else if (t < 9.9) {
+        const k = ease(seg(t, 8.6, 9.9));
         bez(SHOW, CTRL, PULLED, k, pos);
-        ry = SHOW_RY * (1 - k); rx = SHOW_RX * (1 - k); rz = SHOW_RZ * (1 - k); sc = 1 + (SHOW_SCALE - 1) * (1 - k);
-      } else if (t < 10.0) pos.lerpVectors(PULLED, SLOT, ease(seg(t, 9.2, 10.0)));
+        ry = face * (1 - k); rx = SHOW_RX * (1 - k);
+      } else if (t < 10.9) pos.lerpVectors(PULLED, SLOT, ease(seg(t, 9.9, 10.9)));
       else pos.copy(SLOT);
-      bank.rotation.set(rx, ry, rz);
-      bank.scale.setScalar(sc);
-      setCords(cord);
-      return cord;
+      bank.rotation.set(rx, ry, 0);
+      setCords(cord, t);
+      const focus = t < 2.6 ? 0 : t < 4.0 ? smooth(seg(t, 2.6, 4.0)) : t < 8.4 ? 1 : 1 - smooth(seg(t, 8.4, 9.9));
+      return { cord, focus };
     }
 
-    // ---------- Interaction ----------
+    // ---------- Pointer ----------
     let tx = 0, ty = 0, cx = 0, cy = 0;
-    const onMove = (x, y) => {
+    const onMove = (x, y2) => {
       tx = (x / window.innerWidth - 0.5) * 2;
-      ty = (y / window.innerHeight - 0.5) * 2;
+      ty = (y2 / window.innerHeight - 0.5) * 2;
     };
     window.addEventListener('pointermove', (e) => onMove(e.clientX, e.clientY), { passive: true });
     stage.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (t) onMove(t.clientX, t.clientY); }, { passive: true });
 
-    // ---------- Sizing ----------
-    const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3();
-    let w = 1, h = 1;
+    // ---------- Camera framing ----------
+    let w = 1, h = 1, dWide = 10;
+    const halfFov = THREE.MathUtils.degToRad(camera.fov / 2);
     function resize() {
       w = stage.clientWidth; h = stage.clientHeight;
       renderer.setSize(w, h, false);
+      composer.setSize(w, h);
+      bloom.resolution.set(w / 2, h / 2);
       camera.aspect = w / h;
-      // fit about 6.4 x 6.0 world units in view
-      const fit = Math.max(6.2, 6.7 / camera.aspect);
-      const d = fit / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
-      camera.position.set(0, d * 0.16, d);
-      camera.lookAt(0, 0.25, 0);
       camera.updateProjectionMatrix();
-      station.position.set(-0.95, FLOOR_Y, 0);
+      // fit the whole station (about 5.6 tall, 4.3 wide when turned) with a little air
+      const needH = 6.7, needW = 5.2;
+      dWide = Math.max(needH, needW / camera.aspect) / (2 * Math.tan(halfFov));
     }
 
-    // Labels sit beside the side cables and just above the middle one
+    const stationCenter = new THREE.Vector3();
+    const bankCenter = new THREE.Vector3();
+    const target = new THREE.Vector3();
+    const camDir = new THREE.Vector3();
+    function placeCamera(focus) {
+      stationCenter.set(0, FLOOR_Y + CENTER_Y, 0);
+      bank.localToWorld(bankCenter.set(0, 0, -0.25));
+      target.lerpVectors(stationCenter, bankCenter, focus);
+      const dist = THREE.MathUtils.lerp(dWide, dWide * 0.62, focus);
+      camDir.set(cx * 0.12, 0.2 + cy * 0.05, 1).normalize();
+      camera.position.copy(target).addScaledVector(camDir, dist);
+      camera.lookAt(target);
+    }
+
+    const tmp = new THREE.Vector3();
     function placeLabels(cord) {
       const show = cord > 0.97;
       labels.forEach((el) => el.classList.toggle('show', show));
@@ -895,14 +990,14 @@
       cords.forEach((c, i) => {
         const el = labels[i];
         c.end.getWorldPosition(tmp).project(camera);
-        const tx = (tmp.x * 0.5 + 0.5) * w, ty = (-tmp.y * 0.5 + 0.5) * h;
+        const lx = (tmp.x * 0.5 + 0.5) * w, ly = (-tmp.y * 0.5 + 0.5) * h;
         const lw = el.offsetWidth, lh = el.offsetHeight;
-        let x, y;
-        if (c.fan === 0) { x = tx - lw / 2; y = ty - lh - 10; }
-        else { x = c.fan < 0 ? tx - lw - 10 : tx + 10; y = ty - lh / 2; }
+        let x, yy;
+        if (c.fan === 0) { x = lx - lw / 2; yy = ly - lh - 10; }
+        else { x = c.fan < 0 ? lx - lw - 10 : lx + 10; yy = ly - lh / 2; }
         x = Math.min(Math.max(x, 4), w - lw - 4);
-        y = Math.min(Math.max(y, 4), h - lh - 4);
-        el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
+        yy = Math.min(Math.max(yy, 4), h - lh - 4);
+        el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + yy.toFixed(1) + 'px)';
       });
     }
 
@@ -912,19 +1007,19 @@
       cx += (tx - cx) * 0.05;
       cy += (ty - cy) * 0.05;
       const scrollK = Math.min(window.scrollY / 700, 1);
-      station.rotation.y = -0.42 + Math.sin(e * 0.45) * 0.07 + cx * 0.22 + scrollK * 0.3;
-      station.rotation.x = cy * 0.05;
-      const cord = pose(e % T, station.rotation.y);
-      const pulse = 0.82 + 0.18 * (0.5 + 0.5 * Math.sin(e * (2 * Math.PI / 2.8)));
-      screenMat.color.setScalar(pulse);
-      renderer.render(scene, camera);
+      station.rotation.y = -0.5 + Math.sin(e * 0.32) * 0.16 + cx * 0.2 + scrollK * 0.25;
+      const { cord, focus } = pose(e % T, station.rotation.y);
+      placeCamera(focus);
+      const pulse = 0.85 + 0.3 * (0.5 + 0.5 * Math.sin(e * (2 * Math.PI / 2.8)));
+      screenMat.color.setScalar(1.35 + 0.2 * pulse);
+      composer.render();
       placeLabels(cord);
     }
     function still() {
-      station.rotation.set(0, -0.42, 0);
-      const cord = pose(5.5, -0.42);
-      renderer.render(scene, camera);
-      placeLabels(cord);
+      station.rotation.y = -0.5;
+      pose(0, station.rotation.y);
+      placeCamera(0);
+      composer.render();
     }
 
     resize();
@@ -934,12 +1029,11 @@
       still();
     } else {
       let running = false;
-      const io = new IntersectionObserver((entries) => {
+      new IntersectionObserver((entries) => {
         const vis = entries[0].isIntersecting;
         if (vis && !running) { renderer.setAnimationLoop(frame); running = true; }
         else if (!vis && running) { renderer.setAnimationLoop(null); running = false; }
-      });
-      io.observe(stage);
+      }).observe(stage);
       frame();
     }
     stage.classList.add('ready');
@@ -959,31 +1053,50 @@
     [45, 135, 225, 315].forEach((r) => { ctx.save(); ctx.rotate(r * Math.PI / 180); ctx.fill(leaf); ctx.restore(); });
     ctx.restore();
   }
+  function rr(g, x, y, w, h, r) { g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h); }
   function makeTex(c) {
     const t = new THREE.CanvasTexture(c);
     t.colorSpace = THREE.SRGBColorSpace;
-    t.anisotropy = 4;
+    t.anisotropy = 8;
     return t;
   }
+  // Kiosk screen UI
   function screenTexture() {
-    const c = document.createElement('canvas'); c.width = 1024; c.height = 550;
+    const c = document.createElement('canvas'); c.width = 1280; c.height = 760;
     const g = c.getContext('2d');
     const bg = g.createLinearGradient(0, 0, 0, c.height);
-    bg.addColorStop(0, '#160C1C'); bg.addColorStop(1, '#09050C');
+    bg.addColorStop(0, '#1B0F21'); bg.addColorStop(1, '#0B060E');
     g.fillStyle = bg; g.fillRect(0, 0, c.width, c.height);
-    const halo = g.createRadialGradient(512, 215, 10, 512, 215, 260);
-    halo.addColorStop(0, 'rgba(52,199,89,0.22)'); halo.addColorStop(1, 'rgba(52,199,89,0)');
+    const halo = g.createRadialGradient(640, 300, 10, 640, 300, 420);
+    halo.addColorStop(0, 'rgba(52,199,89,0.16)'); halo.addColorStop(1, 'rgba(52,199,89,0)');
     g.fillStyle = halo; g.fillRect(0, 0, c.width, c.height);
-    drawClover(g, 512, 205, 190, '#34C759');
-    g.textAlign = 'center';
-    g.fillStyle = '#34C759';
-    g.font = '600 54px -apple-system, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif';
-    if ('letterSpacing' in g) g.letterSpacing = '8px';
-    g.fillText('TAP TO CHARGE', 512, 400);
-    g.fillStyle = 'rgba(243,238,245,0.55)';
-    g.font = '500 30px -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif';
-    if ('letterSpacing' in g) g.letterSpacing = '2px';
-    g.fillText('Clover Vending', 512, 462);
+    // top bar
+    drawClover(g, 78, 70, 54, '#34C759');
+    g.fillStyle = '#F3EEF5'; g.font = '600 34px ' + FONT; g.textBaseline = 'middle';
+    g.fillText('Clover Vending', 120, 72);
+    g.textAlign = 'right'; g.fillStyle = '#C9B8CF'; g.font = '500 30px ' + FONT;
+    g.fillText('7 chargers ready', 1210, 72);
+    g.fillStyle = '#34C759'; g.beginPath(); g.arc(1210 - g.measureText('7 chargers ready').width - 22, 72, 9, 0, Math.PI * 2); g.fill();
+    // headline
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    g.fillStyle = '#F3EEF5'; g.font = '700 92px ' + FONT;
+    g.fillText('Tap to charge', 640, 300);
+    g.fillStyle = '#C9B8CF'; g.font = '400 36px ' + FONT;
+    g.fillText('Tap your card or phone on top of the station', 640, 362);
+    // three steps
+    const steps = [['1', 'Tap'], ['2', 'Grab'], ['3', 'Return']];
+    steps.forEach(([n, label], i) => {
+      const x = 330 + i * 310, yy = 520;
+      rr(g, x - 125, yy - 70, 250, 170, 28);
+      g.fillStyle = 'rgba(255,255,255,0.06)'; g.fill();
+      g.strokeStyle = 'rgba(255,255,255,0.10)'; g.lineWidth = 2; g.stroke();
+      g.fillStyle = '#34C759'; g.beginPath(); g.arc(x, yy - 8, 34, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#0F230F'; g.font = '700 38px ' + FONT; g.textBaseline = 'middle';
+      g.fillText(n, x, yy - 6);
+      g.fillStyle = '#F3EEF5'; g.font = '600 34px ' + FONT;
+      g.fillText(label, x, yy + 62);
+      g.textBaseline = 'alphabetic';
+    });
     return makeTex(c);
   }
   function plateTexture() {
@@ -992,10 +1105,10 @@
     g.fillStyle = '#0D0B10'; g.fillRect(0, 0, c.width, c.height);
     drawClover(g, 150, 165, 170, '#34C759');
     g.fillStyle = '#F3EEF5';
-    g.font = '700 74px -apple-system, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif';
+    g.font = '700 74px ' + FONT;
     g.fillText('Clover Vending', 280, 150);
     g.fillStyle = '#34C759';
-    g.font = '600 40px -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif';
+    g.font = '600 40px ' + FONT;
     if ('letterSpacing' in g) g.letterSpacing = '5px';
     g.fillText('TAP · CHARGE · RETURN', 282, 225);
     return makeTex(c);
@@ -1003,19 +1116,18 @@
   function topTexture() {
     const c = document.createElement('canvas'); c.width = 1024; c.height = 384;
     const g = c.getContext('2d');
-    const col = '#7A808A';
+    const col = '#8A8F98';
     g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 12; g.lineCap = 'round';
     const cx = 400, cy = 192;
     [44, 78, 112].forEach((r) => {
       g.beginPath(); g.arc(cx - 150, cy, r, -Math.PI / 4, Math.PI / 4); g.stroke();
       g.beginPath(); g.arc(cx + 150, cy, r, Math.PI * 3 / 4, Math.PI * 5 / 4); g.stroke();
     });
-    g.font = '800 72px -apple-system, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif';
+    g.font = '800 72px ' + FONT;
     g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('NFC', cx, cy + 4);
-    // card-insert icon
     g.lineWidth = 8;
-    g.beginPath(); g.roundRect ? g.roundRect(790, 140, 110, 76, 10) : g.rect(790, 140, 110, 76); g.stroke();
+    rr(g, 790, 140, 110, 76, 10); g.stroke();
     g.fillRect(790, 160, 110, 12);
     g.beginPath(); g.moveTo(918, 178); g.lineTo(960, 178); g.stroke();
     g.beginPath(); g.moveTo(946, 162); g.lineTo(964, 178); g.lineTo(946, 194); g.stroke();
@@ -1025,20 +1137,18 @@
   function bankBackTexture() {
     const c = document.createElement('canvas'); c.width = 300; c.height = 640;
     const g = c.getContext('2d');
-    // cable bay
-    g.fillStyle = 'rgba(40,38,44,0.55)';
-    g.beginPath(); g.roundRect ? g.roundRect(34, 8, 232, 232, 18) : g.rect(34, 8, 232, 232); g.fill();
-    g.strokeStyle = 'rgba(233,230,236,0.25)'; g.lineWidth = 3;
-    g.beginPath(); g.roundRect ? g.roundRect(34, 8, 232, 232, 18) : g.rect(34, 8, 232, 232); g.stroke();
+    rr(g, 34, 8, 232, 232, 18);
+    g.fillStyle = 'rgba(40,38,44,0.6)'; g.fill();
+    g.strokeStyle = 'rgba(233,230,236,0.22)'; g.lineWidth = 3; g.stroke();
     g.fillStyle = '#E9E6EC';
     g.textAlign = 'center';
-    g.font = '700 22px -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif';
+    g.font = '700 22px ' + FONT;
     g.fillText('22.5W  8000mAh', 150, 292);
-    g.fillStyle = 'rgba(233,230,236,0.45)';
+    g.fillStyle = 'rgba(233,230,236,0.4)';
     for (let i = 0; i < 6; i++) g.fillRect(42, 318 + i * 14, i % 2 ? 150 : 216, 5);
-    g.fillStyle = '#E9E6EC';
     drawClover(g, 150, 480, 52, '#34C759');
-    g.font = '700 34px -apple-system, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif';
+    g.fillStyle = '#E9E6EC';
+    g.font = '700 34px ' + FONT;
     g.fillText('Clover Vending', 150, 552);
     return makeTex(c);
   }
@@ -1048,19 +1158,18 @@
     g.fillStyle = '#E9E6EC';
     g.textAlign = 'center';
     drawClover(g, 150, 200, 64, '#34C759');
-    g.font = '700 34px -apple-system, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif';
+    g.font = '700 34px ' + FONT;
     g.fillText('Clover Vending', 150, 282);
-    // "this end in first" arrows at the cable end
     [70, 230].forEach((x) => {
       g.beginPath(); g.moveTo(x - 16, 576); g.lineTo(x + 16, 576); g.lineTo(x, 598); g.closePath(); g.fill();
     });
     return makeTex(c);
   }
-  function radialTexture(color) {
+  function radialTexture(inner, outer) {
     const c = document.createElement('canvas'); c.width = c.height = 256;
     const g = c.getContext('2d');
     const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
-    r.addColorStop(0, color); r.addColorStop(1, 'rgba(0,0,0,0)');
+    r.addColorStop(0, inner); r.addColorStop(1, outer);
     g.fillStyle = r; g.fillRect(0, 0, 256, 256);
     return makeTex(c);
   }
