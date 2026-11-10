@@ -45,38 +45,14 @@
   }
   .lede { color: var(--muted); margin-top: 12px; max-width: 34em; }
 
-  /* ---------- Background: slow purple smoke ---------- */
+  /* ---------- Background: still, soft plum glow (gives the glass something to blur) ---------- */
   .smoke {
-    position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
-    background: radial-gradient(120% 80% at 50% 0%, #321A3A 0%, var(--bg) 60%);
-  }
-  .smoke .blob {
-    position: absolute; width: 70vmax; height: 70vmax; border-radius: 50%;
-    opacity: .55; will-change: transform;
-    animation: drift 46s ease-in-out infinite alternate;
-  }
-  .smoke .b1 { left: -25vmax; top: -20vmax; background: radial-gradient(circle, rgba(118,64,138,.55) 0%, rgba(118,64,138,0) 62%); }
-  .smoke .b2 { right: -30vmax; top: 20vh; background: radial-gradient(circle, rgba(86,40,104,.6) 0%, rgba(86,40,104,0) 60%); animation-duration: 58s; animation-direction: alternate-reverse; }
-  .smoke .b3 { left: -10vmax; bottom: -35vmax; background: radial-gradient(circle, rgba(140,82,160,.38) 0%, rgba(140,82,160,0) 60%); animation-duration: 64s; }
-  /* Wispy texture: fractal noise tinted purple, drifting slowly */
-  .smoke .wisp {
-    position: absolute; inset: -50%;
-    background-image: var(--wisp, none);
-    background-size: 900px 900px;
-    opacity: 0; transition: opacity 2s ease; will-change: transform;
-    animation: wisp 120s linear infinite;
-  }
-  .smoke.ready .wisp { opacity: .34; }
-  .smoke .wisp.w2 { background-size: 1300px 1300px; animation-duration: 170s; animation-direction: reverse; }
-  .smoke.ready .wisp.w2 { opacity: .2; }
-  @keyframes drift {
-    0%   { transform: translate3d(0, 0, 0) scale(1); }
-    50%  { transform: translate3d(8vmax, 6vmax, 0) scale(1.12); }
-    100% { transform: translate3d(-6vmax, 10vmax, 0) scale(.94); }
-  }
-  @keyframes wisp {
-    from { transform: translate3d(0, 0, 0); }
-    to   { transform: translate3d(-900px, -450px, 0); }
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(60vmax 60vmax at 0% 0%, rgba(118,64,138,.32), rgba(118,64,138,0) 70%),
+      radial-gradient(55vmax 55vmax at 100% 45%, rgba(86,40,104,.38), rgba(86,40,104,0) 70%),
+      radial-gradient(60vmax 60vmax at 20% 100%, rgba(140,82,160,.2), rgba(140,82,160,0) 70%),
+      var(--bg);
   }
 
   /* ---------- Liquid glass ---------- */
@@ -275,7 +251,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
-    .pulse, .smoke .blob, .smoke .wisp { animation: none; }
+    .pulse { animation: none; }
     .batt-fill, .btn { transition: none; }
     .js .reveal { opacity: 1; transform: none; transition: none; }
   }
@@ -291,13 +267,7 @@
 </head>
 <body>
 
-<div class="smoke" id="smoke" aria-hidden="true">
-  <div class="blob b1"></div>
-  <div class="blob b2"></div>
-  <div class="blob b3"></div>
-  <div class="wisp"></div>
-  <div class="wisp w2"></div>
-</div>
+<div class="smoke" aria-hidden="true"></div>
 
 <!-- Reusable clover mark -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -542,26 +512,6 @@
       el.style.transitionDelay = (i % 3) * 70 + 'ms';
       io.observe(el);
     });
-  })();
-
-  // Smoke texture: fractal noise tinted purple, drawn once into a seamless tile
-  (function () {
-    var svg = "<svg xmlns='http://www.w3.org/2000/svg' width='900' height='900'><filter id='f' x='0' y='0' width='100%' height='100%'>" +
-      "<feTurbulence type='fractalNoise' baseFrequency='0.0028 0.0055' numOctaves='4' seed='11' stitchTiles='stitch'/>" +
-      "<feColorMatrix values='0 0 0 0 0.62  0 0 0 0 0.42  0 0 0 0 0.72  1.7 0 0 0 -0.78'/></filter>" +
-      "<rect width='900' height='900' filter='url(#f)'/></svg>";
-    var img = new Image();
-    img.onload = function () {
-      var c = document.createElement('canvas'); c.width = c.height = 900;
-      c.getContext('2d').drawImage(img, 0, 0);
-      c.toBlob(function (blob) {
-        if (!blob) return;
-        var smoke = document.getElementById('smoke');
-        smoke.style.setProperty('--wisp', 'url(' + URL.createObjectURL(blob) + ')');
-        smoke.classList.add('ready');
-      });
-    };
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
   })();
 
   // If the 3D model can't load (no WebGL, offline), hide that area cleanly
