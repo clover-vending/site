@@ -146,9 +146,9 @@
   .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .stage-loading {
     position: absolute; inset: 0; display: grid; place-items: center;
-    color: var(--muted); font-size: .85rem; transition: opacity .4s ease;
+    color: var(--muted); font-size: .85rem;
   }
-  .stage.ready .stage-loading { opacity: 0; pointer-events: none; }
+  .stage.ready .stage-loading { display: none; }
   .cord-label {
     position: absolute; left: 0; top: 0; z-index: 2;
     padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600; letter-spacing: .01em;
@@ -569,7 +569,7 @@
     scene.add(rim);
     scene.add(new THREE.HemisphereLight(0xF3EEF5, 0x2A1530, 0.35));
 
-    const FLOOR_Y = -2.36;
+    const FLOOR_Y = -2.6;
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ color: 0x0E0412, opacity: 0.45 }));
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = FLOOR_Y;
@@ -578,111 +578,204 @@
 
     // Faint green glow on the counter under the station
     const glow = new THREE.Mesh(
-      new THREE.PlaneGeometry(9, 5),
-      new THREE.MeshBasicMaterial({ map: radialTexture('rgba(52,199,89,0.55)'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.35 })
+      new THREE.PlaneGeometry(10, 6),
+      new THREE.MeshBasicMaterial({ map: radialTexture('rgba(52,199,89,0.55)'), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.3 })
     );
     glow.rotation.x = -Math.PI / 2;
-    glow.position.y = FLOOR_Y + 0.003;
+    glow.position.y = 0.004;
 
     // ---------- Materials ----------
-    const shell = new THREE.MeshPhysicalMaterial({ color: 0xF6F4F8, roughness: 0.34, clearcoat: 0.8, clearcoatRoughness: 0.22 });
-    const trim = new THREE.MeshPhysicalMaterial({ color: 0xD9D4DE, roughness: 0.45, clearcoat: 0.3 });
-    const recess = new THREE.MeshStandardMaterial({ color: 0x17121B, roughness: 0.7 });
-    const glassBlack = new THREE.MeshPhysicalMaterial({ color: 0x07040A, roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.05 });
-    const bankShell = new THREE.MeshPhysicalMaterial({ color: 0xF1EEF4, roughness: 0.38, clearcoat: 0.6, clearcoatRoughness: 0.3 });
+    const shell = new THREE.MeshPhysicalMaterial({ color: 0xF7F7F9, roughness: 0.3, clearcoat: 0.85, clearcoatRoughness: 0.2 });
+    const trim = new THREE.MeshPhysicalMaterial({ color: 0xD3D6DB, roughness: 0.4, clearcoat: 0.4 });
+    const armMat = new THREE.MeshPhysicalMaterial({ color: 0xC5C8CE, roughness: 0.35, metalness: 0.25, clearcoat: 0.5 });
+    const recess = new THREE.MeshStandardMaterial({ color: 0x1A171D, roughness: 0.75 });
+    const glassBlack = new THREE.MeshPhysicalMaterial({ color: 0x060408, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.04 });
+    const blackPlastic = new THREE.MeshPhysicalMaterial({ color: 0x111014, roughness: 0.35, clearcoat: 0.6 });
+    const bankShell = new THREE.MeshPhysicalMaterial({ color: 0xF4F4F6, roughness: 0.36, clearcoat: 0.6, clearcoatRoughness: 0.3 });
+    const greenLight = new THREE.MeshBasicMaterial({ color: 0x3BDB63, toneMapped: false });
     const cableMat = new THREE.MeshStandardMaterial({ color: 0x2D2632, roughness: 0.55 });
     const metal = new THREE.MeshStandardMaterial({ color: 0xD4D7DD, metalness: 1, roughness: 0.22 });
     const gold = new THREE.MeshStandardMaterial({ color: 0xE3C27A, metalness: 1, roughness: 0.3 });
 
     const shadowed = (m) => { m.castShadow = true; return m; };
 
-    // ---------- Station ----------
+    // Rounded rectangle outline (w x d, corner radius r)
+    function roundedRect(w, d, r) {
+      const s = new THREE.Shape(), x = -w / 2, y = -d / 2, P = Math.PI;
+      s.moveTo(x + r, y);
+      s.lineTo(x + w - r, y); s.absarc(x + w - r, y + r, r, -P / 2, 0);
+      s.lineTo(x + w, y + d - r); s.absarc(x + w - r, y + d - r, r, 0, P / 2);
+      s.lineTo(x + r, y + d); s.absarc(x + r, y + d - r, r, P / 2, P);
+      s.lineTo(x, y + r); s.absarc(x + r, y + r, r, P, P * 1.5);
+      return s;
+    }
+    // Vertical block with big rounded corners and softly beveled top/bottom edges, from y=0 to y=h
+    function prism(w, d, r, h, bevel) {
+      const g = new THREE.ExtrudeGeometry(roundedRect(w, d, r), {
+        depth: Math.max(h - 2 * bevel, 0.001), bevelEnabled: bevel > 0,
+        bevelThickness: bevel, bevelSize: bevel, bevelSegments: 5, curveSegments: 28,
+      });
+      g.rotateX(-Math.PI / 2);
+      g.translate(0, bevel, 0);
+      return g;
+    }
+    // Flat pill shape facing +z
+    function pill(w, h, depth) {
+      const g = new THREE.ExtrudeGeometry(roundedRect(w, h, h / 2 - 0.001), { depth, bevelEnabled: false, curveSegments: 20 });
+      return g;
+    }
+
+    // ---------- Station (three stacked white sections with green light lines) ----------
     const station = new THREE.Group();
     scene.add(station);
     station.add(glow);
 
-    const W = 3.2, H = 4.4, D = 1.9, FRONT = D / 2;
-    const body = shadowed(new THREE.Mesh(new RoundedBoxGeometry(W, H, D, 8, 0.24), shell));
-    station.add(body);
-    const foot = shadowed(new THREE.Mesh(new RoundedBoxGeometry(W - 0.25, 0.16, D - 0.25, 4, 0.06), trim));
-    foot.position.y = -H / 2 - 0.08;
-    station.add(foot);
+    const W = 2.9, D = 2.7, R = 0.42, BEV = 0.06, LINE = 0.05;
+    const FRONT = D / 2 + BEV;
+    const tierHeights = [1.13, 1.2, 1.15];
+    const tierY = [];
+    let y = 0;
+    const lineGeo = prism(W + 0.105, D + 0.105, R + 0.05, LINE, 0);
+    tierHeights.forEach((th) => {
+      const line = new THREE.Mesh(lineGeo, greenLight);
+      line.position.y = y;
+      station.add(line);
+      y += LINE;
+      tierY.push(y);
+      const tier = shadowed(new THREE.Mesh(prism(W, D, R, th, BEV), shell));
+      tier.position.y = y;
+      station.add(tier);
+      y += th;
+    });
+    const TOP = y;
 
-    // Screen
-    const bezel = shadowed(new THREE.Mesh(new RoundedBoxGeometry(2.62, 1.5, 0.08, 4, 0.05), glassBlack));
-    bezel.position.set(0, 1.3, FRONT);
-    station.add(bezel);
+    // Front label on the top section (our branding)
+    const TOPMID = tierY[2] + tierHeights[2] * 0.5;
+    const plate = shadowed(new THREE.Mesh(new RoundedBoxGeometry(2.15, 0.74, 0.04, 4, 0.03), blackPlastic));
+    plate.position.set(-0.12, TOPMID, FRONT);
+    station.add(plate);
+    const plateArt = new THREE.Mesh(new THREE.PlaneGeometry(2.05, 0.66), new THREE.MeshBasicMaterial({ map: plateTexture(), toneMapped: false }));
+    plateArt.position.set(-0.12, TOPMID, FRONT + 0.022);
+    station.add(plateArt);
+    const lens = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 12), blackPlastic);
+    lens.position.set(0, TOPMID + 0.47, FRONT - 0.005);
+    station.add(lens);
+
+    // Card slot on the right side
+    const reader = shadowed(new THREE.Mesh(new RoundedBoxGeometry(0.16, 0.34, 0.8, 3, 0.05), blackPlastic));
+    reader.position.set(W / 2 + BEV + 0.03, TOPMID + 0.06, FRONT - 0.62);
+    station.add(reader);
+    const slit = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 0.6), recess);
+    slit.position.set(W / 2 + BEV + 0.115, TOPMID + 0.1, FRONT - 0.62);
+    station.add(slit);
+
+    // NFC tap area printed on the top
+    const topArt = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.9), new THREE.MeshBasicMaterial({ map: topTexture(), transparent: true, toneMapped: false }));
+    topArt.rotation.x = -Math.PI / 2;
+    topArt.position.set(0, TOP + 0.003, 0.72);
+    station.add(topArt);
+
+    // Tablet screen on a hinged arm
+    const TILT = 0.32;
+    const tab = new THREE.Group();
+    const TW = 2.75, TH = 1.65;
+    tab.position.set(0, TOP + 0.1 + (TH / 2) * Math.cos(TILT), -0.05 - (TH / 2) * Math.sin(TILT));
+    tab.rotation.x = -TILT;
+    station.add(tab);
+    tab.add(shadowed(new THREE.Mesh(new RoundedBoxGeometry(TW, TH, 0.1, 5, 0.09), shell)));
+    const glassFace = new THREE.Mesh(new RoundedBoxGeometry(TW - 0.06, TH - 0.06, 0.02, 4, 0.07), glassBlack);
+    glassFace.position.z = 0.045;
+    tab.add(glassFace);
     const screenTex = screenTexture();
     const screenMat = new THREE.MeshBasicMaterial({ map: screenTex, toneMapped: false });
-    const screen = new THREE.Mesh(new THREE.PlaneGeometry(2.42, 1.3), screenMat);
-    screen.position.set(0, 1.3, FRONT + 0.042);
-    station.add(screen);
-    const screenGloss = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.42, 1.3),
-      new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.04, transparent: true, opacity: 0.18, clearcoat: 1 })
-    );
-    screenGloss.position.set(0, 1.3, FRONT + 0.045);
-    station.add(screenGloss);
+    const display = new THREE.Mesh(new THREE.PlaneGeometry(TW - 0.3, TH - 0.3), screenMat);
+    display.position.z = 0.057;
+    tab.add(display);
+    const gloss = new THREE.Mesh(new THREE.PlaneGeometry(TW - 0.08, TH - 0.08),
+      new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: 0.03, transparent: true, opacity: 0.16, clearcoat: 1 }));
+    gloss.position.z = 0.059;
+    tab.add(gloss);
 
-    // Card reader pad
-    const pad = shadowed(new THREE.Mesh(new RoundedBoxGeometry(1.6, 0.62, 0.06, 4, 0.03), trim));
-    pad.position.set(0, 0.2, FRONT);
-    station.add(pad);
-    const padIcon = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.45, 0.5),
-      new THREE.MeshBasicMaterial({ map: readerTexture(), transparent: true, toneMapped: false })
-    );
-    padIcon.position.set(0, 0.2, FRONT + 0.032);
-    station.add(padIcon);
+    const mount = shadowed(new THREE.Mesh(new RoundedBoxGeometry(0.9, 0.14, 0.6, 3, 0.05), shell));
+    mount.position.set(0, TOP + 0.07, -0.95);
+    station.add(mount);
+    const armA = new THREE.Vector3(0, TOP + 0.12, -0.95);
+    const armB = new THREE.Vector3(0, tab.position.y - 0.1, tab.position.z - 0.12);
+    const armV = armB.clone().sub(armA);
+    const arm = shadowed(new THREE.Mesh(new RoundedBoxGeometry(0.36, armV.length() + 0.12, 0.12, 3, 0.05), armMat));
+    arm.position.copy(armA).add(armB).multiplyScalar(0.5);
+    arm.rotation.x = Math.atan2(armV.z, armV.y);
+    station.add(arm);
+    const hinge = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.46, 20), armMat);
+    hinge.rotation.z = Math.PI / 2;
+    hinge.position.copy(armB);
+    station.add(hinge);
 
-    // Slots and power banks
-    const BANK_W = 0.5, BANK_H = 1.36, BANK_D = 0.9;
-    const SLOT_Y = -1.0;
-    const bankGeo = new RoundedBoxGeometry(BANK_W, BANK_H, BANK_D, 4, 0.08);
-    const faceTex = bankFaceTexture();
-    const faceMat = new THREE.MeshBasicMaterial({ map: faceTex, transparent: true, toneMapped: false });
-    const slotXs = [-1.08, -0.36, 0.36, 1.08];
-    const DOCK_Z = FRONT - BANK_D / 2 + 0.07;
+    // ---------- Slots and power banks (2 x 2 in the middle and bottom sections) ----------
+    const BW = 0.94, BT = 0.2, BL = 1.5;
+    const bankGeo = new RoundedBoxGeometry(BW, BT, BL, 5, 0.095);
+    const bezelGeo = pill(1.08, 0.3, 0.03);
+    const holeGeo = pill(0.98, 0.22, 0.02);
+    const DOCK_Z = FRONT + 0.03 - BL / 2;
+    const bankTopTex = bankTopTexture();
 
     function makeBank() {
       const g = new THREE.Group();
+      g.rotation.order = 'YXZ';
       g.add(shadowed(new THREE.Mesh(bankGeo, bankShell)));
-      const face = new THREE.Mesh(new THREE.PlaneGeometry(BANK_W - 0.08, BANK_H - 0.1), faceMat);
-      face.position.z = BANK_D / 2 + 0.003;
-      g.add(face);
+      const led = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.032), greenLight);
+      led.position.z = BL / 2 + 0.002;
+      g.add(led);
+      const art = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 1.3), new THREE.MeshBasicMaterial({ map: bankTopTex, transparent: true, toneMapped: false }));
+      art.rotation.x = -Math.PI / 2;
+      art.position.y = BT / 2 + 0.002;
+      g.add(art);
       return g;
     }
 
-    slotXs.forEach((x, i) => {
-      const slot = new THREE.Mesh(new RoundedBoxGeometry(0.62, 1.52, 0.05, 4, 0.05), recess);
-      slot.position.set(x, SLOT_Y, FRONT + 0.004);
-      station.add(slot);
-      if (i !== 2) {
+    const slots = [];
+    [tierY[1], tierY[0]].forEach((ty, t) => {
+      const th = tierHeights[t === 0 ? 1 : 0];
+      [ty + th * 0.68, ty + th * 0.32].forEach((sy) => {
+        [-0.56, 0.56].forEach((sx) => slots.push(new THREE.Vector3(sx, sy, 0)));
+      });
+    });
+    const MOVER = 1; // middle section, top-right slot
+    slots.forEach((p, i) => {
+      const bezel = new THREE.Mesh(bezelGeo, trim);
+      bezel.position.set(p.x, p.y, FRONT - 0.012);
+      station.add(bezel);
+      const hole = new THREE.Mesh(holeGeo, recess);
+      hole.position.set(p.x, p.y, FRONT + 0.002);
+      station.add(hole);
+      if (i !== MOVER) {
         const b = makeBank();
-        b.position.set(x, SLOT_Y, DOCK_Z);
+        b.position.set(p.x, p.y, DOCK_Z);
         station.add(b);
       }
     });
 
-    // The power bank that comes out, with three built-in cables
+    // The power bank that comes out, with three built-in cables at its back end
     const bank = makeBank();
     station.add(bank);
 
     const UP = new THREE.Vector3(0, 1, 0);
     const TUB = 90, RAD = 10;
+    const E = -BL / 2;
     const cordDefs = [
-      { tip: 'c', pts: [[-0.12, 0.62, 0.2], [-0.13, 0.84, 0.26], [-0.28, 0.99, 0.36], [-0.5, 0.9, 0.44], [-0.62, 0.62, 0.5], [-0.64, 0.3, 0.5]] },
-      { tip: 'l', pts: [[0, 0.62, 0.2], [0, 0.88, 0.26], [0.01, 1.1, 0.36], [0, 1.3, 0.48], [-0.01, 1.48, 0.56]] },
-      { tip: 'm', pts: [[0.12, 0.62, 0.2], [0.13, 0.84, 0.28], [0.28, 0.99, 0.4], [0.5, 0.9, 0.5], [0.62, 0.62, 0.56], [0.64, 0.3, 0.56]] },
+      { tip: 'c', pts: [[-0.3, 0, E + 0.03], [-0.32, 0.02, E - 0.18], [-0.48, 0.06, E - 0.36], [-0.7, 0.1, E - 0.44], [-0.86, 0.12, E - 0.3], [-0.9, 0.12, E - 0.05]] },
+      { tip: 'l', pts: [[0, 0, E + 0.03], [0, 0.02, E - 0.2], [0.01, 0.06, E - 0.43], [0, 0.1, E - 0.67], [-0.01, 0.12, E - 0.85]] },
+      { tip: 'm', pts: [[0.3, 0, E + 0.03], [0.32, 0.02, E - 0.18], [0.48, 0.07, E - 0.36], [0.7, 0.11, E - 0.44], [0.86, 0.13, E - 0.3], [0.9, 0.13, E - 0.05]] },
     ];
     const cords = cordDefs.map((def) => {
       const curve = new THREE.CatmullRomCurve3(def.pts.map((p) => new THREE.Vector3(...p)), false, 'centripetal');
-      const geo = new THREE.TubeGeometry(curve, TUB, 0.024, RAD, false);
+      const geo = new THREE.TubeGeometry(curve, TUB, 0.026, RAD, false);
       const tube = new THREE.Mesh(geo, cableMat);
       tube.castShadow = true;
       bank.add(tube);
-      const grommet = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.03, 20), cableMat);
-      grommet.position.set(def.pts[0][0], BANK_H / 2 + 0.005, def.pts[0][2]);
+      const grommet = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 20), cableMat);
+      grommet.rotation.x = Math.PI / 2;
+      grommet.position.set(def.pts[0][0], 0, E - 0.005);
       bank.add(grommet);
       const plug = connector(def.tip);
       bank.add(plug);
@@ -691,24 +784,24 @@
 
     function connector(type) {
       const g = new THREE.Group();
-      const relief = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.026, 0.08, 16), cableMat);
+      const relief = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.028, 0.08, 16), cableMat);
       relief.position.y = 0.03;
-      const boot = shadowed(new THREE.Mesh(new RoundedBoxGeometry(0.12, 0.17, 0.07, 3, 0.028), cableMat));
+      const boot = shadowed(new THREE.Mesh(new RoundedBoxGeometry(0.13, 0.18, 0.075, 3, 0.03), cableMat));
       boot.position.y = 0.15;
       g.add(relief, boot);
       let tip;
       if (type === 'c') {
-        tip = new THREE.Mesh(new RoundedBoxGeometry(0.085, 0.085, 0.034, 3, 0.015), metal);
-        tip.position.y = 0.28;
+        tip = new THREE.Mesh(new RoundedBoxGeometry(0.09, 0.09, 0.036, 3, 0.016), metal);
+        tip.position.y = 0.285;
       } else if (type === 'l') {
-        tip = new THREE.Mesh(new RoundedBoxGeometry(0.06, 0.09, 0.018, 2, 0.008), metal);
-        tip.position.y = 0.28;
-        const pins = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.05, 0.02), gold);
-        pins.position.y = 0.29;
+        tip = new THREE.Mesh(new RoundedBoxGeometry(0.064, 0.095, 0.02, 2, 0.009), metal);
+        tip.position.y = 0.285;
+        const pins = new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.055, 0.022), gold);
+        pins.position.y = 0.295;
         g.add(pins);
       } else {
-        tip = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.065, 0.024), metal);
-        tip.position.y = 0.268;
+        tip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.07, 0.026), metal);
+        tip.position.y = 0.275;
       }
       g.add(tip);
       return g;
@@ -731,10 +824,10 @@
 
     // ---------- Animation timeline (seconds) ----------
     const T = 11;
-    const SLOT = new THREE.Vector3(slotXs[2], SLOT_Y, DOCK_Z);
-    const PULLED = new THREE.Vector3(slotXs[2], SLOT_Y, DOCK_Z + 1.25);
-    const CTRL = new THREE.Vector3(1.9, 0.2, 2.7);
-    const SHOW = new THREE.Vector3(2.6, 0.15, 1.5);
+    const SLOT = new THREE.Vector3(slots[MOVER].x, slots[MOVER].y, DOCK_Z);
+    const PULLED = new THREE.Vector3(SLOT.x, SLOT.y, DOCK_Z + 1.7);
+    const CTRL = new THREE.Vector3(2.4, SLOT.y + 0.9, 3.3);
+    const SHOW = new THREE.Vector3(3.45, 2.05, 1.3);
     const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
     const seg = (t, a, b) => Math.min(Math.max((t - a) / (b - a), 0), 1);
     const bez = (a, c, b, k, out) => out.set(
@@ -742,7 +835,8 @@
       (1 - k) * (1 - k) * a.y + 2 * (1 - k) * k * c.y + k * k * b.y,
       (1 - k) * (1 - k) * a.z + 2 * (1 - k) * k * c.z + k * k * b.z
     );
-    const SHOW_RX = -0.05, SHOW_SCALE = 1.35;
+    // Shown standing up: big face toward the viewer, cable end on top
+    const SHOW_RX = Math.PI / 2 - 0.16, SHOW_SCALE = 1.3;
 
     // yaw = current turn of the station; the bank turns to face the viewer
     function pose(t, yaw) {
@@ -750,24 +844,24 @@
       let ry = 0, rx = 0, cord = 0, sc = 1;
       const pos = bank.position;
       if (t < 1.0) pos.copy(SLOT);
-      else if (t < 1.8) pos.lerpVectors(SLOT, PULLED, ease(seg(t, 1.0, 1.8)));
-      else if (t < 3.0) {
-        const k = ease(seg(t, 1.8, 3.0));
+      else if (t < 1.9) pos.lerpVectors(SLOT, PULLED, ease(seg(t, 1.0, 1.9)));
+      else if (t < 3.1) {
+        const k = ease(seg(t, 1.9, 3.1));
         bez(PULLED, CTRL, SHOW, k, pos);
         ry = SHOW_RY * k; rx = SHOW_RX * k; sc = 1 + (SHOW_SCALE - 1) * k;
       } else if (t < 8.0) {
-        const hold = seg(t, 3.0, 8.0);
+        const hold = seg(t, 3.1, 8.0);
         const env = Math.sin(Math.PI * hold);
         pos.copy(SHOW);
-        pos.y += Math.sin((t - 3.0) * 1.6) * 0.05 * env;
-        ry = SHOW_RY + Math.sin((t - 3.0) * 1.1) * 0.28 * env;
+        pos.y += Math.sin((t - 3.1) * 1.6) * 0.05 * env;
+        ry = SHOW_RY + Math.sin((t - 3.1) * 1.1) * 0.3 * env;
         rx = SHOW_RX; sc = SHOW_SCALE;
-        cord = t < 3.9 ? ease(seg(t, 3.0, 3.9)) : t < 7.2 ? 1 : 1 - ease(seg(t, 7.2, 8.0));
+        cord = t < 4.0 ? ease(seg(t, 3.1, 4.0)) : t < 7.2 ? 1 : 1 - ease(seg(t, 7.2, 8.0));
       } else if (t < 9.2) {
         const k = ease(seg(t, 8.0, 9.2));
         bez(SHOW, CTRL, PULLED, k, pos);
         ry = SHOW_RY * (1 - k); rx = SHOW_RX * (1 - k); sc = 1 + (SHOW_SCALE - 1) * (1 - k);
-      } else if (t < 9.9) pos.lerpVectors(PULLED, SLOT, ease(seg(t, 9.2, 9.9)));
+      } else if (t < 10.0) pos.lerpVectors(PULLED, SLOT, ease(seg(t, 9.2, 10.0)));
       else pos.copy(SLOT);
       bank.rotation.set(rx, ry, 0);
       bank.scale.setScalar(sc);
@@ -792,18 +886,18 @@
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       // fit about 6.4 x 6.0 world units in view
-      const fit = Math.max(6.0, 6.4 / camera.aspect);
+      const fit = Math.max(6.2, 6.7 / camera.aspect);
       const d = fit / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
       camera.position.set(0, d * 0.16, d);
-      camera.lookAt(0, -0.1, 0);
+      camera.lookAt(0, 0.25, 0);
       camera.updateProjectionMatrix();
-      station.position.x = -0.8;
+      station.position.set(-0.95, FLOOR_Y, 0);
     }
 
     const rects = [];
     function placeLabels(cord) {
       const show = cord > 0.97;
-      bank.localToWorld(tmp2.set(0, 0.6, 0.3)).project(camera);
+      bank.localToWorld(tmp2.set(0, 0, -0.3)).project(camera);
       const bx = (tmp2.x * 0.5 + 0.5) * w, by = (-tmp2.y * 0.5 + 0.5) * h;
       cords.forEach((c, i) => {
         const el = labels[i];
@@ -912,29 +1006,56 @@
     g.fillText('Clover Vending', 512, 462);
     return makeTex(c);
   }
-  function readerTexture() {
-    const c = document.createElement('canvas'); c.width = 768; c.height = 264;
+  function plateTexture() {
+    const c = document.createElement('canvas'); c.width = 1024; c.height = 330;
     const g = c.getContext('2d');
-    g.strokeStyle = '#6F6577'; g.lineWidth = 11; g.lineCap = 'round';
-    const cx = 250, cy = 132;
-    [38, 68, 98].forEach((r) => { g.beginPath(); g.arc(cx - 60, cy, r, -Math.PI / 4, Math.PI / 4); g.stroke(); });
-    g.fillStyle = '#6F6577';
-    g.font = '700 46px -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif';
-    if ('letterSpacing' in g) g.letterSpacing = '4px';
-    g.fillText('TAP CARD', 330, 148);
+    g.fillStyle = '#0D0B10'; g.fillRect(0, 0, c.width, c.height);
+    drawClover(g, 150, 165, 170, '#34C759');
+    g.fillStyle = '#F3EEF5';
+    g.font = '700 74px -apple-system, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif';
+    g.fillText('Clover Vending', 280, 150);
+    g.fillStyle = '#34C759';
+    g.font = '600 40px -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif';
+    if ('letterSpacing' in g) g.letterSpacing = '5px';
+    g.fillText('TAP · CHARGE · RETURN', 282, 225);
     return makeTex(c);
   }
-  function bankFaceTexture() {
-    const c = document.createElement('canvas'); c.width = 160; c.height = 480;
+  function topTexture() {
+    const c = document.createElement('canvas'); c.width = 1024; c.height = 384;
     const g = c.getContext('2d');
+    const col = '#7A808A';
+    g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 12; g.lineCap = 'round';
+    const cx = 400, cy = 192;
+    [44, 78, 112].forEach((r) => {
+      g.beginPath(); g.arc(cx - 150, cy, r, -Math.PI / 4, Math.PI / 4); g.stroke();
+      g.beginPath(); g.arc(cx + 150, cy, r, Math.PI * 3 / 4, Math.PI * 5 / 4); g.stroke();
+    });
+    g.font = '800 72px -apple-system, "SF Pro Display", "Segoe UI", Roboto, Arial, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('NFC', cx, cy + 4);
+    // card-insert icon
+    g.lineWidth = 8;
+    g.beginPath(); g.roundRect ? g.roundRect(790, 140, 110, 76, 10) : g.rect(790, 140, 110, 76); g.stroke();
+    g.fillRect(790, 160, 110, 12);
+    g.beginPath(); g.moveTo(918, 178); g.lineTo(960, 178); g.stroke();
+    g.beginPath(); g.moveTo(946, 162); g.lineTo(964, 178); g.lineTo(946, 194); g.stroke();
+    return makeTex(c);
+  }
+  function bankTopTexture() {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 406;
+    const g = c.getContext('2d');
+    // battery level lights near the front end (bottom of the texture)
     for (let i = 0; i < 4; i++) {
-      const y = 44 + i * 22;
       g.shadowColor = 'rgba(52,199,89,0.9)'; g.shadowBlur = 10;
       g.fillStyle = '#34C759';
-      g.beginPath(); g.roundRect ? g.roundRect(56, y, 48, 10, 5) : g.rect(56, y, 48, 10); g.fill();
+      g.beginPath(); g.roundRect ? g.roundRect(66 + i * 34, 340, 22, 10, 5) : g.rect(66 + i * 34, 340, 22, 10); g.fill();
     }
     g.shadowBlur = 0;
-    drawClover(g, 80, 300, 70, '#34C759');
+    drawClover(g, 128, 170, 110, '#34C759');
+    g.fillStyle = '#8A8F98';
+    g.font = '600 24px -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, sans-serif';
+    g.textAlign = 'center';
+    g.fillText('Clover Vending', 128, 270);
     return makeTex(c);
   }
   function radialTexture(color) {
